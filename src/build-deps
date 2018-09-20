@@ -1,0 +1,2 @@
+(("proto.ss" gerbil/core std/actor)
+ ("kunabi.ss" gerbil/gambit gerbil/gambit/os gerbil/gambit/threads std/logger std/actor std/db/leveldb std/db/lmdb std/debug/heap std/debug/memleak std/format std/generic/dispatch std/iter std/misc/list std/misc/lru std/net/address std/net/httpd std/pregexp std/srfi/1 std/srfi/95 std/sugar std/text/json std/text/zlib ))
