@@ -10,7 +10,7 @@ namespace: kunabi
   :gerbil/gambit
   :gerbil/gambit/os
   :gerbil/gambit/threads
-  :std/logger
+  :kunabi/proto.ss
   :std/actor
   :std/db/leveldb
   :std/db/lmdb
@@ -19,6 +19,7 @@ namespace: kunabi
   :std/format
   :std/generic/dispatch
   :std/iter
+  :std/logger
   :std/misc/list
   :std/misc/lru
   :std/net/address
@@ -28,8 +29,8 @@ namespace: kunabi
   :std/srfi/95
   :std/sugar
   :std/text/json
+  :std/text/yaml
   :std/text/zlib
-  :kunabi/src/proto.ss
   )
 
 (def program-name "kunabi")
@@ -256,27 +257,26 @@ namespace: kunabi
 (def (usage)
   (displayln "Usage: get-tags <verb>")
   (displayln "Verbs:")
-  (displayln "	kunabi ct <directory> <write-back-entries> => Load all files in dir. ")
-  (displayln "	kunabi le => List all event names. ")
-  (displayln "	kunabi lec => List all Error Codes")
-  (displayln "	kunabi read <file> => read in ct file")
-  (displayln "	kunabi lip => List all source ips")
-  (displayln "	kunabi ln => List all user names. ")
-  (displayln "	kunabi lr => List all Regions")
-  (displayln "	kunabi ls => list all records")
-  (displayln "	kunabi lsv => list all vpc records")
-  (displayln "	kunabi se <event name> => list all records of type event name")
-  (displayln "	kunabi sec <error coded> => list all records of error code")
-  (displayln "	kunabi sip <ip address> => list all records from ip address")
-  (displayln "	kunabi sn <user name> => list all records for user name")
-  (displayln "	kunabi sr <Region name> => list all records for region name")
-  (displayln "  vpc -------------")
-  (displayln "  kunabi lvf <vpc file> => load vpc file")
   (exit 2))
 
 (def interactives
   (hash
-   ("channels" (hash (description: "Channel list.") (usage: "channels") (count: 0)))))
+   ("ct" (hash (description: "ct <directory> <write-back-entries> => Load all files in dir. ") (usage: "") (count: 2)))
+   ("le" (hash (description: "List all event names. ") (usage: "le") (count: 0)))
+   ("lec" (hash (description: "lec => List all Error Codes") (usage: "lec") (count: 0)))
+   ("lip" (hash (description: "lip => List all source ips") (usage: "lip") (count: 0)))
+   ("ln" (hash (description: "ln => List all user names. ") (usage: "ln") (count: 0)))
+   ("lr" (hash (description: "lr => List all Regions") (usage: "lr") (count: 0)))
+   ("ls" (hash (description: "ls => list all records") (usage: "ls") (count: 0)))
+   ("lsv" (hash (description: "lsv => list all vpc records") (usage: "lsv") (count: 0)))
+   ("read" (hash (description: "read <file> => read in ct file") (usage: "read <file>") (count: 1)))
+   ("se" (hash (description: "se <event name> => list all records of type event name") (usage: "read <file>") (count: 1)))
+   ("sec" (hash (description: "sec <error coded> => list all records of error code") (usage: "sec <error code>") (count: 1)))
+   ("sip" (hash (description: "sip <ip address> => list all records from ip address") (usage: "sip <ip address>") (count: 1)))
+   ("sn" (hash (description: "sn <user name> => list all records for user name") (usage: "sn <username>") (count: 1)))
+   ("sr" (hash (description: "sr <Region name> => list all records for region name") (usage: "sr <region name>") (count: 1)))
+   ))
+
 
 (def (main . args)
   (if (null? args)
@@ -314,66 +314,97 @@ namespace: kunabi
 ;;   (let ((argc (length args))
 ;; 	(verb (car args)))
 ;;     (cond
-;;      ((string=? verb "ls")
-;;       (want-db)
-;;       (list-records))
-;;      ((string=? verb "lsv")
-;;       (want-db)(list-vpc-records))
-;;      ((string=? verb "lvf")
-;;       (want-db) (read-vpc-file (nth 1 args)))
-;;      ((string=? verb "se")
-;;       (want-db) (search-event (nth 1 args)))
-;;      ((string=? verb "sr")
-;;       (want-db) (search-event (nth 1 args)))
-;;      ((string=? verb "sip")
-;;       (want-db) (search-event (nth 1 args)))
-;;      ((string=? verb "sn")
-;;       (want-db) (search-event (nth 1 args)))
-;;      ((string=? verb "summary")
-;;       (want-db) (summary (nth 1 args)))
-;;      ((string=? verb "sec")
-;;       (want-db) (search-event (nth 1 args)))
-;;      ((string=? verb "lec")
-;;       (want-db) (list-index-entries "I-errors"))
-;;      ((string=? verb "read")
-;;       (want-db) (read-ct-file (nth 1 args)))
-;;      ((string=? verb "ln")
-;;       (want-db) (list-index-entries "I-users"))
-;;      ((string=? verb "le")
-;;       (want-db) (list-index-entries "I-events"))
-;;      ((string=? verb "lr")
-;;       (want-db) (list-index-entries "I-aws-region"))
-;;      ((string=? verb "lip")
-;;       (want-db) (list-source-ips))
-;;      ((string=? verb "rah")
-;;       (want-db) (resolve-all-hosts))
-;;      ((string=? verb "rpc")
-;;       (rpc))
-;;      ((string=? verb "web")
-;;       (web))
-;;      ((string=? verb "summaries")
-;;       (want-db) (summary-by-ip))
-;;      ((string=? verb "vpc")
-;;       (cond
-;;        ((= argc 2)
-;; 	(load-vpc (nth 1 args)))
-;;        ((= argc 3)
-;; 	(set! max-wb-size (string->number (nth 2 args)))
-;; 	(load-vpc (nth 1 args)))))
-;;      ((string=? verb "ct")
-;;       (cond
-;;        ((= argc 2)
-;; 	(load-ct (nth 1 args)))
-;;        ((= argc 3)
-;; 	(set! max-wb-size (string->number (nth 2 args)))
-;; 	(load-ct (nth 1 args)))
-;;        (else
-;; 	(usage))))
-;;      ((string=? verb "new") (display "new called"))
-;;      (else
-;;       (displayln "No verb matching " verb)
-;;       (exit 2)))
-;;     ))
+
+(def (ls)
+  (want-db)
+  (list-records))
+
+(def (lsv)
+  (want-db)
+  (list-vpc-records))
+
+(def (lvf file)
+  (want-db)
+  (read-vpc-file file))
+
+
+(def (se event)
+  (want-db)
+  (search-event event))
+
+(def (sr event)
+  (want-db)
+  (search-event event))
+
+(def (sip event)
+  (want-db)
+  (search-event event)
+
+(def (sn event)
+  (want-db)
+  (search-event event))
+
+(def (summary event)
+  (want-db)
+  (summary event))
+
+(def (sec event)
+  (want-db)
+  (search-event event))
+
+(def (lec)
+  (want-db)
+  (list-index-entries "I-errors"))
+
+(def (read file)
+  (want-db)
+  (read-ct-file file))
+
+(def (ln)
+  (want-db)
+  (list-index-entries "I-users"))
+
+(def (le)
+  (want-db)
+  (list-index-entries "I-events"))
+
+(def (lr)
+  (want-db)
+  (list-index-entries "I-aws-region"))
+
+(def (lip)
+  (want-db)
+  (list-source-ips))
+
+(def (rah)
+  (want-db)
+  (resolve-all-hosts))
+
+(def (rpc)
+  (rpc))
+
+(def (web)
+  (web))
+
+(def (summaries)
+  (want-db) (summary-by-ip))
+
+(def (vpc file)
+  (want-db)
+  (load-vpc file))
+
+(def (vpc file max-wb-size)
+  (set! max-wb-size (string->number max-wb-size))
+  (load-vpc file (nth 1 args)))
+
+(def (ct file)
+  (want-db)
+  (load-ct file))
+
+(def (ct file max-wb-size)
+  (want-db)
+  (set! max-wb-size max-wb-size
+  (load-ct file)))
 
 (def (load-ct dir)
   ;;(##gc-report-set! #t)
