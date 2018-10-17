@@ -4,11 +4,7 @@
 package: kunabi
 namespace: kunabi
 
-(export main memo-cid rpc-db-connect db-init server)
-
 (declare (not optimize-dead-definitions))
-
-(def nil '#(nil))
 
 (import
   :gerbil/gambit
@@ -33,10 +29,15 @@ namespace: kunabi
   :std/sugar
   :std/text/json
   :std/text/zlib
-  "~/kunabi/src/proto.ss"
+  :kunabi/src/proto.ss
   )
 
-;;(import (rename-in :gerbil/gambit/os (current-time builtin-current-time)))
+(def program-name "kunabi")
+(def config-file "~/.kunabi.yaml")
+
+(def nil '#(nil))
+(export main memo-cid rpc-db-connect db-init server)
+
 (def (get-lmdb key)
   (let (txn (lmdb-txn-begin env))
     (try
@@ -273,75 +274,106 @@ namespace: kunabi
   (displayln "  kunabi lvf <vpc file> => load vpc file")
   (exit 2))
 
-;; opens of db files
+(def interactives
+  (hash
+   ("channels" (hash (description: "Channel list.") (usage: "channels") (count: 0)))))
 
 (def (main . args)
   (if (null? args)
     (usage))
-  ;;(displayln "arg length " (length args))
-  (let ((argc (length args))
-	(verb (car args)))
-    (cond
-     ((string=? verb "ls")
-      (want-db)
-      (list-records))
-     ((string=? verb "lsv")
-      (want-db)(list-vpc-records))
-     ((string=? verb "lvf")
-      (want-db) (read-vpc-file (nth 1 args)))
-     ((string=? verb "se")
-      (want-db) (search-event (nth 1 args)))
-     ((string=? verb "sr")
-      (want-db) (search-event (nth 1 args)))
-     ((string=? verb "sip")
-      (want-db) (search-event (nth 1 args)))
-     ((string=? verb "sn")
-      (want-db) (search-event (nth 1 args)))
-     ((string=? verb "summary")
-      (want-db) (summary (nth 1 args)))
-     ((string=? verb "sec")
-      (want-db) (search-event (nth 1 args)))
-     ((string=? verb "lec")
-      (want-db) (list-index-entries "I-errors"))
-     ((string=? verb "read")
-      (want-db) (read-ct-file (nth 1 args)))
-     ((string=? verb "ln")
-      (want-db) (list-index-entries "I-users"))
-     ((string=? verb "le")
-      (want-db) (list-index-entries "I-events"))
-     ((string=? verb "lr")
-      (want-db) (list-index-entries "I-aws-region"))
-     ((string=? verb "lip")
-      (want-db) (list-source-ips))
-     ((string=? verb "rah")
-      (want-db) (resolve-all-hosts))
-     ((string=? verb "rpc")
-      (rpc))
-     ((string=? verb "web")
-      (web))
-     ((string=? verb "summaries")
-      (want-db) (summary-by-ip))
-     ((string=? verb "vpc")
-      (cond
-       ((= argc 2)
-	(load-vpc (nth 1 args)))
-       ((= argc 3)
-	(set! max-wb-size (string->number (nth 2 args)))
-	(load-vpc (nth 1 args)))))
-     ((string=? verb "ct")
-      (cond
-       ((= argc 2)
-	(load-ct (nth 1 args)))
-       ((= argc 3)
-	(set! max-wb-size (string->number (nth 2 args)))
-	(load-ct (nth 1 args)))
-       (else
-	(usage))))
-     ((string=? verb "new") (display "new called"))
-     (else
-      (displayln "No verb matching " verb)
-      (exit 2)))
-    ))
+  (let* ((argc (length args))
+	 (verb (car args))
+	 (args2 (cdr args)))
+    (unless (hash-key? interactives verb)
+      (usage))
+    (let* ((info (hash-get interactives verb))
+	   (count (hash-get info count:)))
+      (unless count
+	(set! count 0))
+      (unless (= (length args2) count)
+	(usage-verb verb))
+      (apply (eval (string->symbol (string-append "kunabi#" verb))) args2))))
+
+(def (usage-verb verb)
+  (let ((howto (hash-get interactives verb)))
+    (displayln "Wrong number of arguments. Usage is:")
+    (displayln program-name " " (hash-get howto usage:))
+    (exit 2)))
+
+(def (load-config)
+  (let ((config (hash)))
+    (hash-for-each
+     (lambda (k v)
+       (hash-put! config (string->symbol k) v))
+     (car (yaml-load config-file)))
+    config))
+
+;; (def (main . args)
+;;   (if (null? args)
+;;     (usage))
+;;   (let ((argc (length args))
+;; 	(verb (car args)))
+;;     (cond
+;;      ((string=? verb "ls")
+;;       (want-db)
+;;       (list-records))
+;;      ((string=? verb "lsv")
+;;       (want-db)(list-vpc-records))
+;;      ((string=? verb "lvf")
+;;       (want-db) (read-vpc-file (nth 1 args)))
+;;      ((string=? verb "se")
+;;       (want-db) (search-event (nth 1 args)))
+;;      ((string=? verb "sr")
+;;       (want-db) (search-event (nth 1 args)))
+;;      ((string=? verb "sip")
+;;       (want-db) (search-event (nth 1 args)))
+;;      ((string=? verb "sn")
+;;       (want-db) (search-event (nth 1 args)))
+;;      ((string=? verb "summary")
+;;       (want-db) (summary (nth 1 args)))
+;;      ((string=? verb "sec")
+;;       (want-db) (search-event (nth 1 args)))
+;;      ((string=? verb "lec")
+;;       (want-db) (list-index-entries "I-errors"))
+;;      ((string=? verb "read")
+;;       (want-db) (read-ct-file (nth 1 args)))
+;;      ((string=? verb "ln")
+;;       (want-db) (list-index-entries "I-users"))
+;;      ((string=? verb "le")
+;;       (want-db) (list-index-entries "I-events"))
+;;      ((string=? verb "lr")
+;;       (want-db) (list-index-entries "I-aws-region"))
+;;      ((string=? verb "lip")
+;;       (want-db) (list-source-ips))
+;;      ((string=? verb "rah")
+;;       (want-db) (resolve-all-hosts))
+;;      ((string=? verb "rpc")
+;;       (rpc))
+;;      ((string=? verb "web")
+;;       (web))
+;;      ((string=? verb "summaries")
+;;       (want-db) (summary-by-ip))
+;;      ((string=? verb "vpc")
+;;       (cond
+;;        ((= argc 2)
+;; 	(load-vpc (nth 1 args)))
+;;        ((= argc 3)
+;; 	(set! max-wb-size (string->number (nth 2 args)))
+;; 	(load-vpc (nth 1 args)))))
+;;      ((string=? verb "ct")
+;;       (cond
+;;        ((= argc 2)
+;; 	(load-ct (nth 1 args)))
+;;        ((= argc 3)
+;; 	(set! max-wb-size (string->number (nth 2 args)))
+;; 	(load-ct (nth 1 args)))
+;;        (else
+;; 	(usage))))
+;;      ((string=? verb "new") (display "new called"))
+;;      (else
+;;       (displayln "No verb matching " verb)
+;;       (exit 2)))
+;;     ))
 
 (def (load-ct dir)
   ;;(##gc-report-set! #t)
