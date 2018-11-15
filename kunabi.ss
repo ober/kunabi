@@ -12,7 +12,6 @@ namespace: kunabi
   :gerbil/gambit/threads
   :kunabi/proto.ss
   :std/actor
-  :std/db/leveldb
   :std/db/lmdb
   :std/debug/heap
   :std/debug/memleak
@@ -79,14 +78,6 @@ namespace: kunabi
   (cond
    ((equal? db-type lmdb:)
     (lmdb-open-db env "kunabi-store"))
-   ((equal? db-type leveldb:)
-    (unless (file-exists? db-dir)
-      (create-directory* db-dir))
-    (let ((location (format "~a/records" db-dir)))
-      (leveldb-open location (leveldb-options
-			      block-size: (def-num (getenv "k_block_size" #f))
-			      write-buffer-size: (def-num (getenv "k_write_buffer_size" #f))
-			      lru-cache-capacity: (def-num (getenv "k_lru_cache_capacity" #f))))))
    ((equal? db-type rpc:)
     (rpc-db-connect rpc-db-addr))
    (else
@@ -119,8 +110,6 @@ namespace: kunabi
   (cond
    ((equal? db-type lmdb:)
     (displayln "db-init lmdb noop"))
-   ((equal? db-type leveldb:)
-    (leveldb-writebatch))
    ((equal? db-type rpc:)
     (displayln "db-init rpc noop"))
    (else
@@ -135,7 +124,7 @@ namespace: kunabi
 
 (def db-dir (or (getenv "KUNABI" #f) ".")) ;;(format "~a/kunabi-db/" (user-info-home (user-info (user-name))))))
 
-(def db-type lmdb:) ;;leveldb
+(def db-type lmdb:)
 (def rpc-db-addr "127.0.0.1:9999")
 
 (def (want-db)
@@ -166,17 +155,11 @@ namespace: kunabi
 
 (def indices-hash (make-hash-table))
 
-(def (leveldb-set)
-  (equal? db-type leveldb:))
-
-
 (def (db-write db wb)
   (dp "in db-write")
   (cond
    ((equal? db-type lmdb:)
     (displayln "db-write wb lmdb: noop"))
-   ((equal? db-type leveldb:)
-    (leveldb-write db wb))
    ((equal? db-type rpc:)
     (displayln "db-write noop for rpc"))
    (else
@@ -188,8 +171,6 @@ namespace: kunabi
   (cond
    ((equal? db-type lmdb:)
     (displayln "db-close lmdb:"))
-   ((equal? db-type leveldb:)
-    (leveldb-close db))
    ((equal? db-type rpc:)
     (displayln "db-close noop for rpc"))
    (else
@@ -201,8 +182,6 @@ namespace: kunabi
   (cond
    ((equal? db-type lmdb:)
     (or (get-lmdb key) #f))
-   ((equal? db-type leveldb:)
-    (leveldb-key? db2 (format "~a" key)))
    ((equal? db-type rpc:)
     (or (rpc-db-get key) #f))
    (else
@@ -216,11 +195,6 @@ namespace: kunabi
     (get-lmdb key))
    ((equal? db-type rpc:)
     (rpc-db-ref key))
-   ((equal? db-type leveldb:)
-    (let ((ret (leveldb-get db (format "~a" key))))
-      (if (u8vector? ret)
-	(u8vector->object ret)
-	"N/A")))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
@@ -234,9 +208,6 @@ namespace: kunabi
     (put-lmdb key value))
    ((equal? db-type rpc:)
     (rpc-db-update! key value))
-   ((equal? db-type leveldb:)
-    (unless (string? key) (dp (format "key: ~a val: ~a" (type-of key) (type-of value))))
-    (leveldb-writebatch-put wb key (object->u8vector value)))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
@@ -248,8 +219,6 @@ namespace: kunabi
     (put-lmdb key value))
    ((equal? db-type rpc:)
     (rpc-db-put! key value))
-   ((equal? db-type leveldb:)
-    (leveldb-put db2 key (object->u8vector value)))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
@@ -344,10 +313,6 @@ namespace: kunabi
   (want-db)
   (search-event event))
 
-(def (summary event)
-  (want-db)
-  (summary event))
-
 (def (sec event)
   (want-db)
   (search-event event))
@@ -380,12 +345,6 @@ namespace: kunabi
   (want-db)
   (resolve-all-hosts))
 
-(def (rpc)
-  (rpc))
-
-(def (web)
-  (web))
-
 (def (summaries)
   (want-db) (summary-by-ip))
 
@@ -393,18 +352,18 @@ namespace: kunabi
   (want-db)
   (load-vpc file))
 
-(def (vpc file max-wb-size)
-  (set! max-wb-size (string->number max-wb-size))
-  (load-vpc file (nth 1 args)))
+;; (def (vpc file max-wb-size)
+;;   (set! max-wb-size (string->number max-wb-size))
+;;   (load-vpc file (nth 1 args)))
 
 (def (ct file)
   (want-db)
   (load-ct file))
 
-(def (ct file max-wb-size)
-  (want-db)
-  (set! max-wb-size max-wb-size
-	(load-ct file)))
+;; (def (ct file max-wb-size)
+;;   (want-db)
+;;   (set! max-wb-size max-wb-size
+;; 	(load-ct file)))
 
 (def (load-ct dir)
   ;;(##gc-report-set! #t)
@@ -738,16 +697,6 @@ namespace: kunabi
       (db-batch wb (format "~a" cid) (hash-get vpc-totals cid)))
     (hash-keys vpc-totals)))
 
-(def (list-records)
-  (def itor (leveldb-iterator records))
-  (leveldb-iterator-seek-first itor)
-  (while (leveldb-iterator-valid? itor)
-    (let ((val (u8vector->object (leveldb-iterator-value itor)))
-	  (key (leveldb-iterator-key itor)))
-      (print-record val)
-      (leveldb-iterator-next itor)))
-  (leveldb-iterator-close itor))
-
 (def (list-vpc-records)
   (def itor (leveldb-iterator records))
   (leveldb-iterator-seek-first itor)
@@ -873,7 +822,6 @@ namespace: kunabi
 	(hash-put! vpc-totals cid (+ (def-num total) (def-num bytez)))))
     (begin ;; new entry to be created and total
       (hash-put! vpc-totals cid bytez))))
-
 
 (def (read-vpc-file file)
   (let ((count 0)
