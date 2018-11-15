@@ -338,7 +338,7 @@ namespace: kunabi
 
 (def (sip event)
   (want-db)
-  (search-event event)
+  (search-event event))
 
 (def (sn event)
   (want-db)
@@ -404,7 +404,7 @@ namespace: kunabi
 (def (ct file max-wb-size)
   (want-db)
   (set! max-wb-size max-wb-size
-  (load-ct file)))
+	(load-ct file)))
 
 (def (load-ct dir)
   ;;(##gc-report-set! #t)
