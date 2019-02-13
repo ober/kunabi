@@ -848,7 +848,6 @@ namespace: kunabi
 	))
     count))
 
-
 (def (load-vpc dir)
   (displayln "load-vpc: dir: " dir)
   (let ((files 0)
