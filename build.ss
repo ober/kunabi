@@ -3,20 +3,28 @@
 
 (import :std/make)
 
+(def lmdb-ver "0.9.23")
+(def mysql-ver "8.0.15")
+(def ssl-ver "1.0.2q")
+(def yaml-ver "0.2.1")
+(def leveldb-ver "1.20_2")
+
 (def build-spec
   '("proto"
     (exe: "kunabi"
-	  "-cc-options" "-I/usr/local/Cellar/openssl/1.0.2o_2/include -I/usr/local/Cellar/mysql/5.7.22/include -I/usr/local/Cellar/libyaml/0.1.7/include -I/usr/local/Cellar/leveldb/1.20_2/include -I/usr/local/Cellar/lmdb/0.9.22/include"
-	  "-ld-options" "-L/usr/local/Cellar/openssl/1.0.2o_2/lib -L/usr/local/Cellar/mysql/5.7.22/lib -L/usr/local/Cellar/libyaml/0.1.7/lib -L/usr/local/Cellar/leveldb/1.20_2/lib -L/usr/local/Cellar/lmdb/0.9.22/lib -lleveldb -lz -llmdb -lssl -lyaml"
+	  "-cc-options"
+	  (format "-I/usr/local/Cellar/openssl/~a/include -I/usr/local/Cellar/mysql/~a/include -I/usr/local/Cellar/libyaml/~a/include -I/usr/local/Cellar/leveldb/~a/include -I/usr/local/Cellar/lmdb/~a/include" ssl-ver mysql-ver yaml-ver leveldb-ver lmdb-ver)
+	  "-ld-options"
+	  (format "-L/usr/local/Cellar/openssl/~a/lib -L/usr/local/Cellar/mysql/~a/lib -L/usr/local/Cellar/libyaml/~a/lib -L/usr/local/Cellar/leveldb/~a/lib -L/usr/local/Cellar/lmdb/~a/lib -lleveldb -lz -llmdb -lssl -lyaml" ssl-ver mysql-ver yaml-ver leveldb-ver lmdb-ver)
 	  "-prelude" "(declare (not safe))")))
-
-
 
 (def build-spec-static
   '("proto"
     (static-exe: "kunabi"
-		 "-cc-options" "-I/usr/local/Cellar/openssl/1.0.2o_2/include -I/usr/local/Cellar/mysql/5.7.22/include -I/usr/local/Cellar/libyaml/0.1.7/include -I/usr/local/Cellar/leveldb/1.20_2/include -I/usr/local/Cellar/lmdb/0.9.22/include"
-		 "-ld-options" "-L/usr/local/Cellar/openssl/1.0.2o_2/lib -L/usr/local/Cellar/mysql/5.7.22/lib -L/usr/local/Cellar/libyaml/0.1.7/lib -L/usr/local/Cellar/leveldb/1.20_2/lib -L/usr/local/Cellar/lmdb/0.9.22/lib -lleveldb -lz -llmdb -lssl -lyaml"
+		 "-cc-options"
+		 (format "-I/usr/local/Cellar/openssl/~a/include -I/usr/local/Cellar/mysql/~a/include -I/usr/local/Cellar/libyaml/~a/include -I/usr/local/Cellar/leveldb/~a/include -I/usr/local/Cellar/lmdb/~a/include" ssl-ver mysql-ver yaml-ver leveldb-ver lmdb-ver)
+		 "-ld-options"
+		 (format "-L/usr/local/Cellar/openssl/~a/lib -L/usr/local/Cellar/mysql/~a/lib -L/usr/local/Cellar/libyaml/~a/lib -L/usr/local/Cellar/leveldb/~a/lib -L/usr/local/Cellar/lmdb/~a/lib -lleveldb -lz -llmdb -lssl -lyaml" ssl-ver mysql-ver yaml-ver leveldb-ver lmdb-ver)
                  "-prelude" "(declare (not safe))")))
 
 (def srcdir
