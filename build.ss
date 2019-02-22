@@ -2,30 +2,21 @@
 ;; -*- Gerbil -*-
 
 (import :std/make)
-
-(def lmdb-ver "0.9.23")
-(def mysql-ver "8.0.15")
-(def ssl-ver "1.0.2q")
-(def yaml-ver "0.2.1")
-(def leveldb-ver "1.20_2")
+(import :std/format)
 
 (def build-spec
-  '("proto"
+  '("kunabi"
     (exe: "kunabi"
-	  "-cc-options"
-	  (format "-I/usr/local/Cellar/openssl/~a/include -I/usr/local/Cellar/mysql/~a/include -I/usr/local/Cellar/libyaml/~a/include -I/usr/local/Cellar/leveldb/~a/include -I/usr/local/Cellar/lmdb/~a/include" ssl-ver mysql-ver yaml-ver leveldb-ver lmdb-ver)
-	  "-ld-options"
-	  (format "-L/usr/local/Cellar/openssl/~a/lib -L/usr/local/Cellar/mysql/~a/lib -L/usr/local/Cellar/libyaml/~a/lib -L/usr/local/Cellar/leveldb/~a/lib -L/usr/local/Cellar/lmdb/~a/lib -lleveldb -lz -llmdb -lssl -lyaml" ssl-ver mysql-ver yaml-ver leveldb-ver lmdb-ver)
-	  "-prelude" "(declare (not safe))")))
+		 "-cc-options" "-I/usr/local/opt/leveldb/include -I/usr/local/include"
+                 "-ld-options" "-lyaml  -lz -L/usr/local/lib -lleveldb"
+		 "-prelude" "(declare (not safe))")))
 
 (def build-spec-static
-  '("proto"
+  '("kunabi"
     (static-exe: "kunabi"
-		 "-cc-options"
-		 (format "-I/usr/local/Cellar/openssl/~a/include -I/usr/local/Cellar/mysql/~a/include -I/usr/local/Cellar/libyaml/~a/include -I/usr/local/Cellar/leveldb/~a/include -I/usr/local/Cellar/lmdb/~a/include" ssl-ver mysql-ver yaml-ver leveldb-ver lmdb-ver)
-		 "-ld-options"
-		 (format "-L/usr/local/Cellar/openssl/~a/lib -L/usr/local/Cellar/mysql/~a/lib -L/usr/local/Cellar/libyaml/~a/lib -L/usr/local/Cellar/leveldb/~a/lib -L/usr/local/Cellar/lmdb/~a/lib -lleveldb -lz -llmdb -lssl -lyaml" ssl-ver mysql-ver yaml-ver leveldb-ver lmdb-ver)
-                 "-prelude" "(declare (not safe))")))
+		 "-cc-options" "-I/usr/local/opt/leveldb/include -I/usr/local/include"
+                 "-ld-options" "-lyaml -lssl -lz -L/usr/local/lib -lleveldb"
+	         "-prelude" "(declare (not safe))")))
 
 (def srcdir
   (path-normalize (path-directory (this-source-file))))
