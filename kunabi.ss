@@ -10,9 +10,9 @@ namespace: kunabi
   :gerbil/gambit
   :gerbil/gambit/os
   :gerbil/gambit/threads
-  :kunabi/proto.ss
   :std/actor
   :std/db/lmdb
+  :std/db/leveldb
   :std/debug/heap
   :std/debug/memleak
   :std/format
@@ -32,13 +32,62 @@ namespace: kunabi
   :std/text/zlib
   )
 
+(export main memo-cid)
+
 (def program-name "kunabi")
-(def config-file "~/.kunabi.yaml")
-
+(def config-file (format "~/.~a.yaml" program-name))
 (def nil '#(nil))
-(export main memo-cid rpc-db-connect db-init server)
 
-(def (get-lmdb key)
+(def (dp val)
+  (if (getenv "DEBUG" #f)
+    (displayln val)))
+
+;;;; DB OPERATIONS
+
+(def (db-call operation type key value)
+  (cond
+   ((equal? operation put:)
+    (db-put type key value))
+   ((equal? operation get:)
+    (db-get type key))
+   (else
+    (displayln "Unknown operation " operation))))
+
+(def (db-put type key value)
+  (cond
+   ((equal? type leveldb:)
+    (db-put-leveldb key value))
+   ((equal? type lmdb:)
+    (db-put-lmdb key value))
+   (else
+    (displayln "Unknown DB type " type))))
+
+(def (db-get type key)
+  (cond
+   ((equal? type leveldb:)
+    (db-get-leveldb key))
+   ((equal? type lmdb:)
+    (db-get-lmdb key))
+   (else
+    (displayln "Unknown DB type " type))))
+
+(def (db-open type)
+  (dp "in db-open")
+  (cond
+   ((equal? db-type leveldb:)
+    (displayln "can't open leveldb yet"))
+    ;;(leveldb-open-db env "kunabi-store"))
+   ((equal? db-type lmdb:)
+    (lmdb-open-db env "kunabi-store"))
+   (else
+    (displayln "Unknown db-type: " db-type)
+    (exit 2))))
+
+;;; lmdb
+(def (db-get-leveldb key)
+  (displayln "place holder"))
+
+(def (db-get-lmdb key)
   (let (txn (lmdb-txn-begin env))
     (try
      (let* ((bytes (lmdb-get txn db key))
@@ -54,7 +103,7 @@ namespace: kunabi
        ;;(raise e)
        ))))
 
-(def (put-lmdb key val)
+(def (db-put-lmdb key val)
   (let* ((bytes (call-with-output-u8vector [] (cut write-json val <>)))
 	 (bytes (compress bytes))
 	 (txn (lmdb-txn-begin env)))
@@ -65,24 +114,8 @@ namespace: kunabi
        (lmdb-txn-abort txn)
        (raise e)))))
 
-(def (rpc-db-connect addr)
-  (let (rpcd (start-rpc-server! proto: (rpc-cookie-proto)))
-    (rpc-connect rpcd 'kunabi-store addr)))
-
-(def (dp val)
-  (if (getenv "DEBUG" #f)
-    (displayln val)))
-
-(def (db-open)
-  (dp "in db-open")
-  (cond
-   ((equal? db-type lmdb:)
-    (lmdb-open-db env "kunabi-store"))
-   ((equal? db-type rpc:)
-    (rpc-db-connect rpc-db-addr))
-   (else
-    (displayln "Unknown db-type: " db-type)
-    (exit 2))))
+(def (db-put-leveldb key val)
+  (displayln "need to implement"))
 
 (def (memo-cid convo)
   (let ((cid 0))
@@ -99,7 +132,6 @@ namespace: kunabi
 	(hash-put! hc-hash cid convo)))
     cid))
 
-
 (def (def-num num)
   (if (string? num)
     (string->number num)
@@ -110,8 +142,6 @@ namespace: kunabi
   (cond
    ((equal? db-type lmdb:)
     (displayln "db-init lmdb noop"))
-   ((equal? db-type rpc:)
-    (displayln "db-init rpc noop"))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2)))
@@ -125,20 +155,18 @@ namespace: kunabi
 (def db-dir (or (getenv "KUNABI" #f) ".")) ;;(format "~a/kunabi-db/" (user-info-home (user-info (user-name))))))
 
 (def db-type lmdb:)
-(def rpc-db-addr "127.0.0.1:9999")
 
 (def (want-db)
   "foo")
 
 (setenv "GERBIL_HOME" (format "~a/gerbil" (user-info-home (user-info (user-name)))))
 
-
 (def hc-hash (make-hash-table))
 (def lru-miss-table (make-hash-table))
 (def hc-lru (make-lru-cache (def-num max-lru-size)))
 (def vpc-totals (make-hash-table))
 
-(def records (db-open))
+(def records (db-open db-type))
 
 (def env records)
 (def wb (db-init))
@@ -147,11 +175,7 @@ namespace: kunabi
 
 (def write-back-count 0)
 
-
 (def max-wb-size 1000)
-;;(if (equal? db-type rpc:)
-;; 		   1000
-;; 		   200000))
 
 (def indices-hash (make-hash-table))
 
@@ -160,8 +184,6 @@ namespace: kunabi
   (cond
    ((equal? db-type lmdb:)
     (displayln "db-write wb lmdb: noop"))
-   ((equal? db-type rpc:)
-    (displayln "db-write noop for rpc"))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
@@ -171,8 +193,6 @@ namespace: kunabi
   (cond
    ((equal? db-type lmdb:)
     (displayln "db-close lmdb:"))
-   ((equal? db-type rpc:)
-    (displayln "db-close noop for rpc"))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
@@ -181,44 +201,16 @@ namespace: kunabi
   (dp (format "in db-key? db2: ~a key: ~a" db2 key))
   (cond
    ((equal? db-type lmdb:)
-    (or (get-lmdb key) #f))
-   ((equal? db-type rpc:)
-    (or (rpc-db-get key) #f))
+    (or (db-get-lmdb key) #f))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
 
-(def (db-get db key)
-  (dp (format "db-get: ~a" key))
-  (cond
-   ((equal? db-type lmdb:)
-    (get-lmdb key))
-   ((equal? db-type rpc:)
-    (rpc-db-ref key))
-   (else
-    (displayln "Unknown db-type: " db-type)
-    (exit 2))))
 
 (def (db-batch batch key value)
-  ;;  (if (table? value)
-  ;;    (displayln "db-batch:got table in value key:" key " value hash:"  (hash->list value)))
-  ;;  (dp (format "db-batch: key: ~a value: ~a" key value))
   (cond
    ((equal? db-type lmdb:)
-    (put-lmdb key value))
-   ((equal? db-type rpc:)
-    (rpc-db-update! key value))
-   (else
-    (displayln "Unknown db-type: " db-type)
-    (exit 2))))
-
-(def (db-put db2 key value)
-  ;;  (dp (format "db-put: key: ~a val: ~a" key value))
-  (cond
-   ((equal? db-type lmdb:)
-    (put-lmdb key value))
-   ((equal? db-type rpc:)
-    (rpc-db-put! key value))
+    (db-put-lmdb key value))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
@@ -245,7 +237,6 @@ namespace: kunabi
    ("sn" (hash (description: "sn <user name> => list all records for user name") (usage: "sn <username>") (count: 1)))
    ("sr" (hash (description: "sr <Region name> => list all records for region name") (usage: "sr <region name>") (count: 1)))
    ))
-
 
 (def (main . args)
   (if (null? args)
@@ -277,16 +268,12 @@ namespace: kunabi
      (car (yaml-load config-file)))
     config))
 
-;; (def (main . args)
-;;   (if (null? args)
-;;     (usage))
-;;   (let ((argc (length args))
-;; 	(verb (car args)))
-;;     (cond
-
 (def (ls)
   (want-db)
   (list-records))
+
+(def (list-records)
+  (displayln "list-records not implemented"))
 
 (def (lsv)
   (want-db)
@@ -295,7 +282,6 @@ namespace: kunabi
 (def (lvf file)
   (want-db)
   (read-vpc-file file))
-
 
 (def (se event)
   (want-db)
@@ -360,10 +346,6 @@ namespace: kunabi
   (want-db)
   (load-ct file))
 
-;; (def (ct file max-wb-size)
-;;   (want-db)
-;;   (set! max-wb-size max-wb-size
-;; 	(load-ct file)))
 
 (def (load-ct dir)
   ;;(##gc-report-set! #t)
@@ -435,12 +417,11 @@ namespace: kunabi
 (def (update-db-index index entry)
   "Fetch the index from db, then add our new entry, and save."
   (dp (format "update-db-index: ~a ~a" index entry))
-  ;; (let ((current (db-get records (format "I-~a" index))))
-  ;;   (hash-put! current entry #t)
-  ;;   (hash-put! indices-hash index current)
-  ;;   (displayln (format "- ~a:~a" index entry) " length hash: " (hash-length current))
-  ;;   (format "I-~a" index) current))
-  (rpc-db-update! index entry))
+  (let ((current (db-get records (format "I-~a" index))))
+    (hash-put! current entry #t)
+    (hash-put! indices-hash index current)
+    (displayln (format "- ~a:~a" index entry) " length hash: " (hash-length current))
+    (format "I-~a" index) current))
 
 (def (mark-file-processed file)
   (dp "in mark-file-processed")
@@ -476,7 +457,7 @@ namespace: kunabi
 	    (for-each
 	      (lambda (row)
 		(set! count (+ count 1))
-		(rpc-process-row row))
+		(process-row row))
 	      mytables)
 	    ;;(for-each
 	    ;;(lambda (t)
@@ -768,7 +749,7 @@ namespace: kunabi
 		 ))))
 
 (def (stringify-hash h)
-  (let ((results '()))
+  (let ((results []))
     (if (table? h)
       (begin
 	(hash-for-each
@@ -789,7 +770,7 @@ namespace: kunabi
       (displayln "Could not find entry in indices-db for " look-for))))
 
 (def (flatten x)
-  (cond ((null? x) '())
+  (cond ((null? x) [])
 	((pair? x) (append (flatten (car x)) (flatten (cdr x))))
 	(else (list x))))
 
@@ -948,20 +929,20 @@ namespace: kunabi
     username))
 
 (def vpc-fields '(
-		  bytez
-		  date
-		  dstaddr
-		  dstport
-		  endf
-		  interface-id
-		  packets
-		  protocol
-		  srcaddr
-		  srcport
-		  start
-		  status
-		  action
-		  ))
+		 bytez
+		 date
+		 dstaddr
+		 dstport
+		 endf
+		 interface-id
+		 packets
+		 protocol
+		 srcaddr
+		 srcport
+		 start
+		 status
+		 action
+		 ))
 
 (def (search-event-obj look-for)
   (let ((index-name (format "I-~a" look-for)))
@@ -1061,271 +1042,128 @@ namespace: kunabi
      sum)))
 
 
-(def (web)
-  (let* ((address "127.0.0.1:8080")
-	 (httpd (start-http-server! address mux: (make-default-http-mux default-handler))))
-    (http-register-handler httpd "/names" names-handler)
-    (thread-join! httpd)))
+(def (process-row row)
+  (dp (format "process-row: row: ~a" (hash->list row)))
+  (let-hash row
+    (let*
+	((user (find-user .?userIdentity))
+	 (req-id (number->string (add-val-db (or .?requestID .?eventID))))
+	 (h (hash
+	     (aws-region (add-val .?awsRegion))
+	     (error-code (add-val .?errorCode))
+	     (error-message (add-val .?errorMessage))
+	     (event-id .?eventID)
+	     (event-name (add-val .?eventName))
+	     (event-source (add-val .?eventSource))
+	     (event-time .?eventTime)
+	     (event-type (add-val .?eventType))
+	     (recipient-account-id (add-val .?recipientAccountId))
+	     (request-parameters .?requestParameters)
+	     (user (add-val user))
+	     (response-elements .?responseElements)
+	     (source-ip-address (add-val .?sourceIPAddress))
+	     (user-agent (add-val .?userAgent))
+	     (user-identity .?userIdentity))))
 
-(def (names-handler req res)
-  (let* ((content-type
-	  (assget "Content-Type" (http-request-headers req)))
-	 (headers
-	  (if content-type
-	    [["Content-Type" . content-type]]
-	    [])))
-    (http-response-write res 200 headers
-			 (http-request-body req))))
+      (set! write-back-count (+ write-back-count 1))
+      (dp (format "process-row: doing db-batch on req-id: ~a on hash ~a" req-id (hash->list h)))
+      (spawn
+       (lambda ()
+	 (db-batch wb req-id h)
+	 (dp (format "------------- end of batch of req-id on hash ----------"))
+	 (when (string? .?errorCode)
+	   (add-to-indexes
+	     (hash ("errors" .?errorCode)
+		   (.?errorCode req-id))))
+	 (add-to-indexes
+	  (hash ("source-ip-address" .sourceIPAddress)
+		(.sourceIPAddress req-id)
+		("users" user)
+		(user req-id)
+		("events" .eventName)
+		(.eventName req-id)
+		("aws-region" .awsRegion)
+		(.awsRegion req-id))))))))
 
-(def (default-handler req res)
-  (http-response-write res 404 '(("Content-Type" . "text/plain"))
-		       "these aren't the droids you are looking for.\n"))
+(def (add-to-indexes i-hash)
+  (when (table? i-hash)
+    (hash-for-each
+     (lambda (k v)
+       (add-to-index k v))
+     i-hash)))
 
+(def (get key)
+  (dp (format  "get: ~a" key))
+  (cond
+   ((equal? db-type lmdb:)
+    (db-get-lmdb key))
+   ((equal? db-type leveldb:)
+    (displayln "stub for get in get for leveldb: " key))))
+;;(get-leveldb key))
 
-;; RPC method here
-;; cribbed from kunabi-storec.ss
+;; (def (put! key val)
+;;   (dp (format "put!: ~a ~a" key val))
+;;   (cond
+;;    ((equal? db-type lmdb:)
+;;     (put-lmdb key val))
+;;    ((equal? db-type leveldb:)
+;;     (put-leveldb key val))))
 
-(def (rpc-db-get key)
-  (dp (format "rpc-db-get: ~a: " key))
-  (!!kunabi-store.get records key))
+;; (def (update! key val)
+;;   (cond
+;;    ((equal? db-type lmdb:)
+;;     (update-lmdb key val))
+;;    ((equal? db-type leveldb:)
+;;     (update-leveldb key val))))
 
-(def (rpc-process-row row)
-  (dp (format "rpc-process-row: ~a: " row))
-  (!!kunabi-store.process-row records row))
+;; (def (remove! key)
+;;   (cond
+;;    ((equal? db-type lmdb:)
+;;     (remove-lmdb key))
+;;    ((equal? db-type leveldb:)
+;;     (remove-leveldb key))))
 
-(def (rpc-db-ref key)
-  (dp (format "rpc-db-ref: ~a" key))
-  (let* ((val ""))
-    (try
-     (let ((test-val (!!kunabi-store.ref records key)))
-       (set! val test-val)) ;; (string->json-object test-val)))
-     (catch (e)
-       (set! val #f)))
-    val))
-
-(def (rpc-db-put! key val)
-  (if (table? val)
-    (let ((size (hash-length val)))
-      (when (> size 10000)
-	(dp (format "key: ~a val length: ~a" key size)))))
-  (!!kunabi-store.put! records key val)) ;;(json-object->string val)))
-
-(def (rpc-db-update! key val)
-  (dp (format "rpc-db-update! key: ~a val: ~a" key (if (table? val) (hash-length val) val)))
-  (!!kunabi-store.update! records key val))
-
-(def (rpc-db-remove! key)
-  (!!kunabi-store.remove! records key))
-
-;; ;; rpc server
-
-(def (server rpcd env)
-  (def nil '#(nil))
-  (def db (db-open))
-
-  (def (process-row row)
-    (dp (format "process-row: row: ~a" (hash->list row)))
-    (let-hash row
-      (let*
-	  ((user (find-user .?userIdentity))
-	   (req-id (number->string (add-val-db (or .?requestID .?eventID))))
-	   )
-	(displayln "got row: " row))))
-  ;;    (h (hash
-  ;; 	 (aws-region (add-val .?awsRegion))
-  ;; 	 (error-code (add-val .?errorCode))
-  ;; 	 (error-message (add-val .?errorMessage))
-  ;; 	 (event-id .?eventID)
-  ;; 	 (event-name (add-val .?eventName))
-  ;; 	 (event-source (add-val .?eventSource))
-  ;; 	 (event-time .?eventTime)
-  ;; 	 (event-type (add-val .?eventType))
-  ;; 	 (recipient-account-id (add-val .?recipientAccountId))
-  ;; 	 (request-parameters .?requestParameters)
-  ;; 	 (user (add-val user))
-  ;; 	 (response-elements .?responseElements)
-  ;; 	 (source-ip-address (add-val .?sourceIPAddress))
-  ;; 	 (user-agent (add-val .?userAgent))
-  ;; 	 (user-identity .?userIdentity))))
-
-  ;; (set! write-back-count (+ write-back-count 1))
-  ;; (dp (format "process-row: doing db-batch on req-id: ~a on hash ~a" req-id (hash->list h)))
-  ;; (spawn
-  ;;  (lambda ()
-  ;;    (db-batch wb req-id h)
-  ;;    (dp (format "------------- end of batch of req-id on hash ----------"))
-  ;;    (when (string? .?errorCode)
-  ;;      (begin
-  ;; 	 (add-to-index "errors" .?errorCode)
-  ;; 	 (add-to-index .?errorCode req-id)))
-  ;;    (add-to-index "source-ip-address" .sourceIPAddress)
-  ;;    (add-to-index .sourceIPAddress req-id)
-  ;;    (add-to-index "users" user)
-  ;;    (add-to-index user req-id)
-  ;;    (add-to-index "events" .eventName)
-  ;;    (add-to-index .eventName req-id)
-  ;;    (add-to-index "aws-region" .awsRegion)
-  ;;    (add-to-index .awsRegion req-id)))))))
-
-  (def wb (leveldb-writebatch))
-
-
-  (def (get key)
-    (dp (format  "get: ~a" key))
-    (cond
-     ((equal? db-type lmdb:)
-      (get-lmdb key))
-     ((equal? db-type leveldb:)
-      (displayln "stub for get in get for leveldb: " key))))
-  ;;(get-leveldb key))
-
-  (def (put! key val)
-    (dp (format "put!: ~a ~a" key val))
-    (cond
-     ((equal? db-type lmdb:)
-      (put-lmdb key val))
-     ((equal? db-type leveldb:)
-      (put-leveldb key val))))
-
-  (def (update! key val)
-    (cond
-     ((equal? db-type lmdb:)
-      (update-lmdb key val))
-     ((equal? db-type leveldb:)
-      (update-leveldb key val))))
-
-  (def (remove! key)
-    (cond
-     ((equal? db-type lmdb:)
-      (remove-lmdb key))
-     ((equal? db-type leveldb:)
-      (remove-leveldb key))))
-
-  (def (get-leveldb key)
-    (displayln "get-leveldb: " key)
-    (try
-     (let* ((bytes (leveldb-get db (format "~a" key)))
-  	    (val (if (u8vector? bytes)
-  		   (u8vector->object bytes)
-  		   nil)))
-       val)
-     (catch (e)
-       (raise e))))
-
-  (def (put-leveldb key val)
-    (displayln "put-leveldb: " key " " val)
-    (try
-     (leveldb-put db key (object->u8vector val))
-     (catch (e)
-       (raise e))))
-
-  (def (update-leveldb key val)
-    (put-leveldb key val))
-
-  (def (remove-leveldb key)
-    (dp (format "remove-leveldb: ~a" key)))
-
-  (def (update-lmdb key val)
-    (let* ((txn (lmdb-txn-begin env))
-	   (bytes (lmdb-get txn db key))
-	   (current (if bytes
-		      (call-with-input-u8vector (uncompress bytes) read-json)
-		      nil))
-	   (new (if (table? current)
-		  (hash-put! current val #t)))
-	   (final (compress (call-with-output-u8vector [] (cut write-json new <>)))))
-      ;;(bytes (call-with-output-u8vector [] (cut write-json val <>)))
-      ;; (bytes (compress bytes))
-      (try
-       (lmdb-put txn db key final)
-       (lmdb-txn-commit txn)
-       (catch (e)
-	 (lmdb-txn-abort txn)
-	 (raise e)))))
-
-  (def (remove-lmdb key)
-    (displayln "remove! key:" key)
-    (let (txn (lmdb-txn-begin env))
-      (try
-       (lmdb-del txn db key)
-       (lmdb-txn-commit txn)
-       (catch (e)
-	 (lmdb-txn-abort txn)
-	 (raise e)))))
-
-  (rpc-register rpcd 'kunabi-store)
-
-  (while #t
-    (<-
-     ((!kunabi-store.get key k)
-      (try
-       (let* ((val (get key))
-	      (val
-	       (if (eq? val nil)
-		 #f
-		 val)))
-	 (!!value val k))
-       (catch (e)
-	 (log-error "kunabi-store.get" e)
-	 (!!error (error-message e) k))))
-
-     ((!kunabi-store.ref key k)
-      (try
-       (let (val (get key))
-	 (if (eq? val nil)
-	   (!!error "No object associated with key" k)
-	   (!!value val k)))
-       (catch (e)
-	 (log-error "kunabi-store.ref" e)
-	 (!!error (error-message e) k))))
-
-     ((!kunabi-store.process-row row k)
-      (try
-       (let (val (process-row row))
-     	 (if (eq? val nil)
-     	   (!!error "Error on process-row call" k)
-     	   (!!value val k)))
-       (catch (e)
-     	 (log-error "kunabi-store.process-row" e)
-     	 (!!error (error-message e) k))))
-
-     ((!kunabi-store.update! key val k)
-      (try
-       (put! key val)
-       (!!value (void) k)
-       (catch (e)
-	 (displayln "error kunabi-store-update: key:" key " val:" val)
-	 (log-error "kunabi-store.update!" e)
-	 (!!error (error-message e) k))))
-
-     ((!kunabi-store.put! key val k)
-      (try
-       (put! key val)
-       (!!value (void) k)
-       (catch (e)
-	 (displayln "error kunabi-store-put: key:" key " val:" val)
-	 (log-error "kunabi-store.put!" e)
-	 (!!error (error-message e) k))))
-
-     ((!kunabi-store.remove! key k)
-      (try
-       (remove! key)
-       (!!value (void) k)
-       (catch (e)
-	 (log-error "kunabi-store.remove!" e)
-	 (!!error (error-message e) k))))
-     (what
-      (warning "Unexpected message: ~a " what)))))
-
-(def (rpc . args)
+(def (get-leveldb key)
+  (displayln "get-leveldb: " key)
   (try
-   (start-logger!)
-   (let* ((rpcd (start-rpc-server! "127.0.0.1:9999" proto: (rpc-cookie-proto)))
-	  (env (lmdb-open "./kunabi-store" mapsize: 100000000000)))
-     (spawn server rpcd env)
-     (thread-join! rpcd))
-   (catch (uncaught-exception? exn)
-     (display-exception (uncaught-exception-reason exn) (current-error-port)))))
+   (let* ((bytes (leveldb-get db (format "~a" key)))
+	  (val (if (u8vector? bytes)
+		 (u8vector->object bytes)
+		 nil)))
+     val)
+   (catch (e)
+     (raise e))))
+
+(def (put-leveldb key val)
+  (displayln "put-leveldb: " key " " val)
+  (try
+   (leveldb-put db key (object->u8vector val))
+   (catch (e)
+     (raise e))))
+
+(def (update-leveldb key val)
+  (put-leveldb key val))
+
+(def (remove-leveldb key)
+  (dp (format "remove-leveldb: ~a" key)))
+
+(def (update-lmdb key val)
+  (let* ((txn (lmdb-txn-begin env))
+	 (bytes (lmdb-get txn db key))
+	 (current (if bytes
+		    (call-with-input-u8vector (uncompress bytes) read-json)
+		    nil))
+	 (new (if (table? current)
+		(hash-put! current val #t)))
+	 (final (compress (call-with-output-u8vector [] (cut write-json new <>)))))
+    ;;(bytes (call-with-output-u8vector [] (cut write-json val <>)))
+    ;; (bytes (compress bytes))
+    (try
+     (lmdb-put txn db key final)
+     (lmdb-txn-commit txn)
+     (catch (e)
+       (lmdb-txn-abort txn)
+       (raise e)))))
 
 (def (get-val-t val)
   (let ((res (get-val val)))
