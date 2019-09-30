@@ -11,6 +11,9 @@ namespace: kunabi
   :gerbil/gambit/os
   :gerbil/gambit/threads
   :std/actor
+  :std/db/dbi
+  :std/db/postgresql
+  :std/db/postgresql-driver
   :std/db/lmdb
   :std/db/leveldb
   :std/debug/heap
@@ -35,8 +38,27 @@ namespace: kunabi
 (export main memo-cid)
 
 (def program-name "kunabi")
-(def config-file (format "~/.~a.yaml" program-name))
+(def config-file "~/.kunabi.yaml")
+(def type lmdb:)
 (def nil '#(nil))
+
+(def interactives
+  (hash
+   ("ct" (hash (description: "ct <directory> <write-back-entries> => Load all files in dir. ") (usage: "") (count: 2)))
+   ("le" (hash (description: "List all event names. ") (usage: "le") (count: 0)))
+   ("lec" (hash (description: "lec => List all Error Codes") (usage: "lec") (count: 0)))
+   ("lip" (hash (description: "lip => List all source ips") (usage: "lip") (count: 0)))
+   ("ln" (hash (description: "ln => List all user names. ") (usage: "ln") (count: 0)))
+   ("lr" (hash (description: "lr => List all Regions") (usage: "lr") (count: 0)))
+   ("ls" (hash (description: "ls => list all records") (usage: "ls") (count: 0)))
+   ("lsv" (hash (description: "lsv => list all vpc records") (usage: "lsv") (count: 0)))
+   ("read" (hash (description: "read <file> => read in ct file") (usage: "read <file>") (count: 1)))
+   ("se" (hash (description: "se <event name> => list all records of type event name") (usage: "read <file>") (count: 1)))
+   ("sec" (hash (description: "sec <error coded> => list all records of error code") (usage: "sec <error code>") (count: 1)))
+   ("sip" (hash (description: "sip <ip address> => list all records from ip address") (usage: "sip <ip address>") (count: 1)))
+   ("sn" (hash (description: "sn <user name> => list all records for user name") (usage: "sn <username>") (count: 1)))
+   ("sr" (hash (description: "sr <Region name> => list all records for region name") (usage: "sr <region name>") (count: 1)))
+   ))
 
 (def (dp val)
   (if (getenv "DEBUG" #f)
@@ -115,7 +137,7 @@ namespace: kunabi
        (raise e)))))
 
 (def (db-put-leveldb key val)
-  (displayln "need to implement"))
+  (displayln "not implemented"))
 
 (def (memo-cid convo)
   (let ((cid 0))
@@ -220,23 +242,7 @@ namespace: kunabi
   (displayln "Verbs:")
   (exit 2))
 
-(def interactives
-  (hash
-   ("ct" (hash (description: "ct <directory> <write-back-entries> => Load all files in dir. ") (usage: "") (count: 2)))
-   ("le" (hash (description: "List all event names. ") (usage: "le") (count: 0)))
-   ("lec" (hash (description: "lec => List all Error Codes") (usage: "lec") (count: 0)))
-   ("lip" (hash (description: "lip => List all source ips") (usage: "lip") (count: 0)))
-   ("ln" (hash (description: "ln => List all user names. ") (usage: "ln") (count: 0)))
-   ("lr" (hash (description: "lr => List all Regions") (usage: "lr") (count: 0)))
-   ("ls" (hash (description: "ls => list all records") (usage: "ls") (count: 0)))
-   ("lsv" (hash (description: "lsv => list all vpc records") (usage: "lsv") (count: 0)))
-   ("read" (hash (description: "read <file> => read in ct file") (usage: "read <file>") (count: 1)))
-   ("se" (hash (description: "se <event name> => list all records of type event name") (usage: "read <file>") (count: 1)))
-   ("sec" (hash (description: "sec <error coded> => list all records of error code") (usage: "sec <error code>") (count: 1)))
-   ("sip" (hash (description: "sip <ip address> => list all records from ip address") (usage: "sip <ip address>") (count: 1)))
-   ("sn" (hash (description: "sn <user name> => list all records for user name") (usage: "sn <username>") (count: 1)))
-   ("sr" (hash (description: "sr <Region name> => list all records for region name") (usage: "sr <region name>") (count: 1)))
-   ))
+
 
 (def (main . args)
   (if (null? args)
@@ -345,7 +351,6 @@ namespace: kunabi
 (def (ct file)
   (want-db)
   (load-ct file))
-
 
 (def (load-ct dir)
   ;;(##gc-report-set! #t)
