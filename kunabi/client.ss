@@ -39,7 +39,6 @@
 (def program-name "kunabi")
 (def config-file "~/.kunabi.yaml")
 (def type lmdb:)
-(def nil '#(nil))
 
 (def (dp val)
   (if (getenv "DEBUG" #f)
@@ -78,9 +77,6 @@
 (def hc-lru (make-lru-cache (def-num max-lru-size)))
 (def vpc-totals (make-hash-table))
 
-(def records (db-open db-type))
-
-(def env records)
 (def wb (db-init))
 (def db wb)
 (def HC 0)
@@ -149,9 +145,6 @@
 
 (def (source-ips)
   (list-source-ips))
-
-(def (resolve-all-hosts)
-  (resolve-all-hosts))
 
 (def (summaries)
   (summary-by-ip))
@@ -636,7 +629,7 @@
   (let (summaries (sort! (hash-keys (db-get records "I-source-ip-address")) eq?))
     (for (sumation summaries)
       (summary sumation)
-      (displayln ""))
+      (displayln ""))))
 
 (def (ip? x)
   (pregexp-match "^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}" x))
@@ -645,13 +638,13 @@
   (displayln ip)
   (if (ip? ip)
     (let* ((idx (format "H-~a" ip))
-	   (lookup (host-info ip))
-	   (resolved? (db-key? records idx)))
+           (lookup (host-info ip))
+           (resolved? (db-key? records idx)))
       (unless resolved?
-	(when (host-info? lookup)
-	  (let ((lookup-name (host-info-name lookup)))
-	    (unless (string=? lookup-name ip)
-	      (db-put records (format "H-~a" ip) lookup-name))))))))
+        (when (host-info? lookup)
+          (let ((lookup-name (host-info-name lookup)))
+            (unless (string=? lookup-name ip)
+              (db-put records (format "H-~a" ip) lookup-name))))))))
 
 (def (resolve-all-hosts)
   (let ((threads [])
@@ -670,56 +663,56 @@
   (let ((username ""))
     (when (table? ui)
       (let-hash ui
-	(let ((type (hash-get ui 'type)))
-	  (if type
-	    (cond
-	     ((string=? "IAMUser" type)
-	      (set! username .userName))
-	     ((string=? "AWSAccount" type)
-	      (set! username (format "~a-~a" .accountId .principalId)))
-	     ((string=? "AssumedRole" type)
-	      (if (hash-key? ui 'sessionContext)
-		(let-hash
-		    .sessionContext
-		  (let-hash
-		      .sessionIssuer
-		    (set! username .userName)))
-		(begin ;; not found
-		  (displayln "could not find username. " (hash->list ui)))))
-	     ((string=? "AWSService" type)
-	      (set! username (hash-get ui 'invokedBy)))
-	     ((string=? "Root" type)
-	      (set! username (format "~a invokedBy: ~a" (hash-get ui 'userName) (hash-get ui 'invokedBy))))
-	     ((string=? "FederatedUser" type)
-	      (let-hash ui
-		(let-hash .sessionContext
-		  (set! username (hash-ref .sessionIssuer 'userName)))))
-	     (else
-	      (set! username (format "Unknown Type: ~a" (stringify-hash ui)))))
-	    (displayln "error: type :" type " not found in ui" (stringify-hash ui))))))
+        (let ((type (hash-get ui 'type)))
+          (if type
+            (cond
+             ((string=? "IAMUser" type)
+              (set! username .userName))
+             ((string=? "AWSAccount" type)
+              (set! username (format "~a-~a" .accountId .principalId)))
+             ((string=? "AssumedRole" type)
+              (if (hash-key? ui 'sessionContext)
+                (let-hash
+                    .sessionContext
+                  (let-hash
+                      .sessionIssuer
+                    (set! username .userName)))
+                (begin ;; not found
+                  (displayln "could not find username. " (hash->list ui)))))
+             ((string=? "AWSService" type)
+              (set! username (hash-get ui 'invokedBy)))
+             ((string=? "Root" type)
+              (set! username (format "~a invokedBy: ~a" (hash-get ui 'userName) (hash-get ui 'invokedBy))))
+             ((string=? "FederatedUser" type)
+              (let-hash ui
+                (let-hash .sessionContext
+                  (set! username (hash-ref .sessionIssuer 'userName)))))
+             (else
+              (set! username (format "Unknown Type: ~a" (stringify-hash ui)))))
+            (displayln "error: type :" type " not found in ui" (stringify-hash ui))))))
     username))
 
 (def vpc-fields [
-		 bytez
-		 date
-		 dstaddr
-		 dstport
-		 endf
-		 interface-id
-		 packets
-		 protocol
-		 srcaddr
-		 srcport
-		 start
-		 status
-		 action
-		 ])
+                 bytez
+                 date
+                 dstaddr
+                 dstport
+                 endf
+                 interface-id
+                 packets
+                 protocol
+                 srcaddr
+                 srcport
+                 start
+                 status
+                 action
+                 ])
 
 (def (search-event-obj look-for)
   (let ((index-name (format "I-~a" look-for)))
     (if (db-key? records index-name)
       (let ((matches (hash-keys (db-get records index-name))))
-	(resolve-records matches))
+        (resolve-records matches))
       (displayln "Could not find entry in indices-db for " look-for))))
 
 (def (float->int num)
@@ -737,19 +730,19 @@
         (entries (hash-keys (db-get records (format "I-~a" key)))))
     (for (entry entries)
       (if (db-key? records (format "~a" entry))
-	  (let ((row (u8vector->object (leveldb-get records (format "~a" entry)))))
-	    (if (table? row)
-	      (let-hash row
-		(dp (format "~a" (hash->list row)))
-		(inc-hash sum (get-val .event-name))
-		(inc-hash sum (get-val .event-type))
-		(inc-hash sum (get-val .user))
-		(inc-hash sum (get-val .source-ip-address))
-		(inc-hash sum (get-val .error-message))
-		(inc-hash sum (get-val .error-code))
-		(inc-hash sum (get-val .aws-region))
-		)))
-	  (displayln "No index for " entry)))
+        (let ((row (u8vector->object (leveldb-get records (format "~a" entry)))))
+          (if (table? row)
+            (let-hash row
+              (dp (format "~a" (hash->list row)))
+              (inc-hash sum (get-val .event-name))
+              (inc-hash sum (get-val .event-type))
+              (inc-hash sum (get-val .user))
+              (inc-hash sum (get-val .source-ip-address))
+              (inc-hash sum (get-val .error-message))
+              (inc-hash sum (get-val .error-code))
+              (inc-hash sum (get-val .aws-region))
+              )))
+        (displayln "No index for " entry)))
 
     (display  (format " ~a: " key))
     (if (ip? key) (display (db-get records (format "H-~a" key))))
@@ -763,44 +756,44 @@
   (dp (format "process-row: row: ~a" (hash->list row)))
   (let-hash row
     (let*
-	((user (find-user .?userIdentity))
-	 (req-id (number->string (add-val-db (or .?requestID .?eventID))))
-	 (h (hash
-	     (aws-region (add-val .?awsRegion))
-	     (error-code (add-val .?errorCode))
-	     (error-message (add-val .?errorMessage))
-	     (event-id .?eventID)
-	     (event-name (add-val .?eventName))
-	     (event-source (add-val .?eventSource))
-	     (event-time .?eventTime)
-	     (event-type (add-val .?eventType))
-	     (recipient-account-id (add-val .?recipientAccountId))
-	     (request-parameters .?requestParameters)
-	     (user (add-val user))
-	     (response-elements .?responseElements)
-	     (source-ip-address (add-val .?sourceIPAddress))
-	     (user-agent (add-val .?userAgent))
-	     (user-identity .?userIdentity))))
+        ((user (find-user .?userIdentity))
+         (req-id (number->string (add-val-db (or .?requestID .?eventID))))
+         (h (hash
+             (aws-region (add-val .?awsRegion))
+             (error-code (add-val .?errorCode))
+             (error-message (add-val .?errorMessage))
+             (event-id .?eventID)
+             (event-name (add-val .?eventName))
+             (event-source (add-val .?eventSource))
+             (event-time .?eventTime)
+             (event-type (add-val .?eventType))
+             (recipient-account-id (add-val .?recipientAccountId))
+             (request-parameters .?requestParameters)
+             (user (add-val user))
+             (response-elements .?responseElements)
+             (source-ip-address (add-val .?sourceIPAddress))
+             (user-agent (add-val .?userAgent))
+             (user-identity .?userIdentity))))
 
       (set! write-back-count (+ write-back-count 1))
       (dp (format "process-row: doing db-batch on req-id: ~a on hash ~a" req-id (hash->list h)))
       (spawn
        (lambda ()
-	 (db-batch wb req-id h)
-	 (dp (format "------------- end of batch of req-id on hash ----------"))
-	 (when (string? .?errorCode)
-	   (add-to-indexes
-	     (hash ("errors" .?errorCode)
-		   (.?errorCode req-id))))
-	 (add-to-indexes
-	  (hash ("source-ip-address" .sourceIPAddress)
-		(.sourceIPAddress req-id)
-		("users" user)
-		(user req-id)
-		("events" .eventName)
-		(.eventName req-id)
-		("aws-region" .awsRegion)
-		(.awsRegion req-id))))))))
+         (db-batch wb req-id h)
+         (dp (format "------------- end of batch of req-id on hash ----------"))
+         (when (string? .?errorCode)
+           (add-to-indexes
+            (hash ("errors" .?errorCode)
+                  (.?errorCode req-id))))
+         (add-to-indexes
+          (hash ("source-ip-address" .sourceIPAddress)
+                (.sourceIPAddress req-id)
+                ("users" user)
+                (user req-id)
+                ("events" .eventName)
+                (.eventName req-id)
+                ("aws-region" .awsRegion)
+                (.awsRegion req-id))))))))
 
 (def (add-to-indexes i-hash)
   (when (table? i-hash)

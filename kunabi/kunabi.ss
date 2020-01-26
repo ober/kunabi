@@ -2,8 +2,6 @@
 ;;; © ober
 ;;; AWS Cloudwatch parser library
 
-
-
 (import
   :gerbil/gambit
   :gerbil/gambit/os
