@@ -31,6 +31,8 @@
   :std/text/json
   :std/text/yaml
   :std/text/zlib
+  :ober/oberlib
+  :ober/kunabi/client
   )
 
 (export main)
@@ -57,7 +59,6 @@
    ("sr" (hash (description: "sr <Region name> => list all records for region name") (usage: "sr <region name>") (count: 1)))
    ))
 
-
 (def (main . args)
   (if (null? args)
     (usage))
@@ -72,7 +73,7 @@
 	(set! count 0))
       (unless (= (length args2) count)
 	(usage-verb verb))
-      (apply (eval (string->symbol (string-append "ober/jira/client#" verb))) args2))))
+      (apply (eval (string->symbol (string-append "ober/kunabi/client#" verb))) args2))))
 
 (def (usage-verb verb)
   (let ((howto (hash-get interactives verb)))
