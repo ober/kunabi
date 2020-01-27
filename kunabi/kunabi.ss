@@ -41,7 +41,7 @@
 
 (def interactives
   (hash
-   ("ct" (hash (description: "ct <directory> <write-back-entries> => Load all files in dir. ") (usage: "") (count: 2)))
+   ("ct" (hash (description: "ct <directory> => Load all files in dir. ") (usage: "") (count: 1)))
    ("le" (hash (description: "List all event names. ") (usage: "le") (count: 0)))
    ("lec" (hash (description: "lec => List all Error Codes") (usage: "lec") (count: 0)))
    ("lip" (hash (description: "lip => List all source ips") (usage: "lip") (count: 0)))
