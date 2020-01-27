@@ -143,6 +143,7 @@
   (load-ct file))
 
 (def (load-ct dir)
+  (db-open leveldb: "test")
   ;;(##gc-report-set! #t)
   (dp (format "load-ct: ~a" dir))
   ;;  (spawn watch-heap!)
