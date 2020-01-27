@@ -51,8 +51,8 @@
 	(set! cid (hash-get hc-hash convo)))
       (begin ;; no hash entry
 	(inc-hc)
-	(db-batch wb convo HC)
-	(db-batch wb (format "~a" HC) convo)
+	(db-batch convo HC)
+	(db-batch (format "~a" HC) convo)
 	;;(displayln "HC is " HC)
 	(set! cid HC)
 	(hash-put! hc-hash convo cid)
@@ -77,8 +77,6 @@
 (def hc-lru (make-lru-cache (def-num max-lru-size)))
 (def vpc-totals (make-hash-table))
 
-(def wb (db-init))
-(def db wb)
 (def HC 0)
 
 (def write-back-count 0)
@@ -186,13 +184,13 @@
 	 (displayln k ":" v)))
      lru-miss-table)
     (flush-indices-hash)
-    (db-write records wb)
-    (db-close records)))
+    (db-write)
+    (db-close)))
 
 (def (file-already-processed? file)
   (dp "in file-already-processed?")
   (let* ((short (get-short file))
-	 (seen (db-key? records (format "F-~a" short))))
+	 (seen (db-key? (format "F-~a" short))))
     seen))
 
 (def (add-to-index index entry)
@@ -204,7 +202,7 @@
       (begin
 	(dp (format "ati: index not in global hash for ~a. adding" index))
 	(hash-put! indices-hash index (hash))
-	(let ((have-db-entry-for-index (db-key? records (format "I-~a" index))))
+	(let ((have-db-entry-for-index (db-key? (format "I-~a" index))))
 	  (displayln (format "have-db-entry-for-index: ~a key: I-~a" have-db-entry-for-index index))
 	  (if have-db-entry-for-index
 	    (update-db-index index entry)
@@ -222,12 +220,12 @@
   (let ((current (make-hash-table)))
     (hash-put! current entry #t)
     (hash-put! indices-hash index current)
-    (db-batch wb (format "I-~a" index) current)))
+    (db-batch (format "I-~a" index) current)))
 
 (def (update-db-index index entry)
   "Fetch the index from db, then add our new entry, and save."
   (dp (format "update-db-index: ~a ~a" index entry))
-  (let ((current (db-get records (format "I-~a" index))))
+  (let ((current (db-get (format "I-~a" index))))
     (hash-put! current entry #t)
     (hash-put! indices-hash index current)
     (displayln (format "- ~a:~a" index entry) " length hash: " (hash-length current))
@@ -237,7 +235,7 @@
   (dp "in mark-file-processed")
   (let ((short (get-short file)))
     (format "marking ~A~%" file)
-    (db-put records (format "F-~a" short) "t")))
+    (db-put (format "F-~a" short) "t")))
 
 (def (read-ct-file file)
   (dp (format "read-ct-file: ~a" file))
@@ -342,8 +340,8 @@
      ((and (string=? "0" hcn-safe))
       (dp "hcn is 0")
       (set! ret "0"))
-     ((db-key? records hcn-safe)
-      (let ((db-val (db-get records hcn-safe)))
+     ((db-key? hcn-safe)
+      (let ((db-val (db-get hcn-safe)))
 	(dp (format "db-val: ~a ~a" db-val hcn-safe) )
 	(set! ret db-val)
 	(lru-cache-put! hc-lru hcn-safe db-val)
@@ -387,33 +385,32 @@
     0)))
 
 (def (add-val-db-lru val)
-  (let ((seen (db-key? records val))
+  (let ((seen (db-key? val))
 	(hcn 0))
     (if seen
-      (set! hcn (db-get records val))
+      (set! hcn (db-get val))
       (begin ;; not seen. need to bump HC and use new HC
 	(dp (format "db miss: ~a" val))
 	(inc-hc)
 	(set! hcn HC)
-	(db-batch wb val HC)
-	(db-batch wb (format "~a" HC) val)))
+	(db-batch val HC)
+	(db-batch (format "~a" HC) val)))
     (lru-cache-put! hc-lru val hcn)
     hcn))
 
 (def (add-val-db val)
   (set! db-type lmdb:)
   (displayln "add-val-db: val: " val " db-type: " db-type)
-  (let ((seen (db-key? records val))
+  (let ((seen (db-key? val))
 	(hcn 0))
     (if seen
-      (set! hcn (db-get records val))
+      (set! hcn (db-get val))
       (begin ;; not seen. need to bump HC and use new HC
 	(inc-hc)
 	(set! hcn HC)
-	(db-batch wb val HC)
+	(db-batch val HC)
 	))
     hcn))
-
 
 (def (flush-all?)
   (dp (format "write-back-count && max-wb-size ~a ~a" write-back-count max-wb-size))
@@ -422,19 +419,19 @@
       (displayln "writing.... " write-back-count)
       ;;(type-of (car (##process-statistics)))
       (time (flush-indices-hash))
-      (time (db-write records wb))
+      (time (db-write))
       (set! write-back-count 0))))
 
 (def (get-next-id max)
   (let ((maxid (1+ max)))
-    (if (db-key? records (format "~a" maxid))
+    (if (db-key? (format "~a" maxid))
       (get-next-id maxid)
       maxid)))
 
 (def (inc-hc)
   ;; increment HC to next free id.
   (set! HC (get-next-id HC))
-  (db-put records "HC" (format "~a" HC)))
+  (db-put "HC" (format "~a" HC)))
 
 (def (indices-report)
   (let ((total 0))
@@ -447,20 +444,20 @@
     (displayln "idicies count total: " total)))
 
 (def (load-indices-hash)
-  (dp (format "in load-indices-hash: INDICES:~a" (db-key? records "INDICES")))
+  (dp (format "in load-indices-hash: INDICES:~a" (db-key? "INDICES")))
   (inc-hc)
   (if (= (hash-length indices-hash) 0)
-    (let ((has-key (db-key? records "INDICES")))
+    (let ((has-key (db-key? "INDICES")))
       (displayln "has-key " has-key)
       (if has-key
 	(begin ;; load it up.
 	  (dp (format "load-indices-hash records has no INDICES entry"))
-	  (let ((indices (db-get records "INDICES")))
+	  (let ((indices (db-get "INDICES")))
 	    (dp (hash->list indices))
 	    (for-each
 	      (lambda (index)
 		(displayln (format "index: ~a" index))
-		(let ((index-int (db-get records index)))
+		(let ((index-int (db-get index)))
 		  (hash-put! indices-hash index index-int)))
 	      indices)))))
     (displayln "No INDICES entry. skipping hash loading")))
@@ -468,27 +465,18 @@
 (def (flush-indices-hash)
   (let ((indices (make-hash-table)))
     (for (index (hash-keys indices-hash))
-      (db-batch wb (format "I-~a" index) (hash-get indices-hash index))
+      (db-batch (format "I-~a" index) (hash-get indices-hash index))
       (hash-put! indices index #t))
-    (db-put records "INDICES" indices)))
+    (db-put "INDICES" indices)))
 
 (def (flush-vpc-totals)
   (for (cid (hash-keys vpc-totals))
-    (db-batch wb (format "~a" cid) (hash-get vpc-totals cid))))
+    (db-batch (format "~a" cid) (hash-get vpc-totals cid))))
 
-(def (list-vpc-records)
-  (def itor (leveldb-iterator records))
-  (leveldb-iterator-seek-first itor)
-  (while (leveldb-iterator-valid? itor)
-    (begin
-      (print-record
-       (leveldb-iterator-value itor))
-      (leveldb-iterator-next itor)))
-  (leveldb-iterator-close itor))
 
 (def (list-index-entries idx)
-  (if (db-key? records idx)
-    (let ((entries (hash-keys (db-get records idx))))
+  (if (db-key? idx)
+    (let ((entries (hash-keys (db-get idx))))
       (if (list? entries)
 	(for-each
 	  (lambda (x)
@@ -546,8 +534,8 @@
 (def (search-event look-for)
   (dp (format "look-for: ~a" look-for))
   (let ((index-name (format "I-~a" look-for)))
-    (if (db-key? records index-name)
-      (let ((matches (hash-keys (db-get records index-name))))
+    (if (db-key? index-name)
+      (let ((matches (hash-keys (db-get index-name))))
 	;;	(displayln matches)
 	(resolve-records matches))
       (displayln "Could not find entry in indices-db for " look-for))))
@@ -621,12 +609,12 @@
         (mark-file-processed file)
         (flush-vpc-totals)))
     (flush-vpc-totals)
-    (db-write records wb)
-    (db-close records)
+    (db-write)
+    (db-close)
     (displayln "Total: " total-count)))
 
 (def (summary-by-ip)
-  (let (summaries (sort! (hash-keys (db-get records "I-source-ip-address")) eq?))
+  (let (summaries (sort! (hash-keys (db-get "I-source-ip-address")) eq?))
     (for (sumation summaries)
       (summary sumation)
       (displayln ""))))
@@ -639,25 +627,25 @@
   (if (ip? ip)
     (let* ((idx (format "H-~a" ip))
            (lookup (host-info ip))
-           (resolved? (db-key? records idx)))
+           (resolved? (db-key? idx)))
       (unless resolved?
         (when (host-info? lookup)
           (let ((lookup-name (host-info-name lookup)))
             (unless (string=? lookup-name ip)
-              (db-put records (format "H-~a" ip) lookup-name))))))))
+              (db-put (format "H-~a" ip) lookup-name))))))))
 
 (def (resolve-all-hosts)
   (let ((threads [])
-        (entries (hash-keys (db-get records "I-source-ip-address"))))
+        (entries (hash-keys (db-get "I-source-ip-address"))))
     (for (entry entries)
       (add-host-ent entry))))
 
 (def (list-source-ips)
-  (let (entries (sort! (hash-keys (db-get records "I-source-ip-address")) eq?))
+  (let (entries (sort! (hash-keys (db-get "I-source-ip-address")) eq?))
     (for (entry entries)
       (let ((hname (format "H-~a" entry)))
-        (if (db-key? records hname)
-          (displayln (format "~a: ~a" entry (db-get records hname))))))))
+        (if (db-key? hname)
+          (displayln (format "~a: ~a" entry (db-get hname))))))))
 
 (def (find-user ui)
   (let ((username ""))
@@ -710,8 +698,8 @@
 
 (def (search-event-obj look-for)
   (let ((index-name (format "I-~a" look-for)))
-    (if (db-key? records index-name)
-      (let ((matches (hash-keys (db-get records index-name))))
+    (if (db-key? index-name)
+      (let ((matches (hash-keys (db-get index-name))))
         (resolve-records matches))
       (displayln "Could not find entry in indices-db for " look-for))))
 
@@ -727,10 +715,10 @@
 
 (def (summary key)
   (let ((sum (hash))
-        (entries (hash-keys (db-get records (format "I-~a" key)))))
+        (entries (hash-keys (db-get (format "I-~a" key)))))
     (for (entry entries)
-      (if (db-key? records (format "~a" entry))
-        (let ((row (u8vector->object (leveldb-get records (format "~a" entry)))))
+      (if (db-key? (format "~a" entry))
+        (let ((row (db-get (format "~a" entry))))
           (if (table? row)
             (let-hash row
               (dp (format "~a" (hash->list row)))
@@ -745,7 +733,7 @@
         (displayln "No index for " entry)))
 
     (display  (format " ~a: " key))
-    (if (ip? key) (display (db-get records (format "H-~a" key))))
+    (if (ip? key) (display (db-get (format "H-~a" key))))
     (hash-for-each
      (lambda (k v)
        (display (format " ~a:~a " k v)))
@@ -779,7 +767,7 @@
       (dp (format "process-row: doing db-batch on req-id: ~a on hash ~a" req-id (hash->list h)))
       (spawn
        (lambda ()
-         (db-batch wb req-id h)
+         (db-batch req-id h)
          (dp (format "------------- end of batch of req-id on hash ----------"))
          (when (string? .?errorCode)
            (add-to-indexes
