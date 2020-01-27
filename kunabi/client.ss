@@ -29,8 +29,7 @@
   :std/text/json
   :std/text/yaml
   :std/text/zlib
-  :ober/oberlib
-  )
+  :ober/oberlib)
 
 (export #t)
 (declare (not optimize-dead-definitions))
@@ -38,11 +37,6 @@
 
 (def program-name "kunabi")
 (def config-file "~/.kunabi.yaml")
-(def type lmdb:)
-
-(def (dp val)
-  (if (getenv "DEBUG" #f)
-    (displayln val)))
 
 (def (memo-cid convo)
   (let ((cid 0))
@@ -59,11 +53,8 @@
 	(hash-put! hc-hash cid convo)))
     cid))
 
-(def (def-num num)
-  (if (string? num)
-    (string->number num)
-    num))
-
+(def (list-vpc-records)
+  (+ 1 1))
 
 (def max-lru-size (or (getenv "LRU" #f) 10000))
 (def use-write-backs #t)
@@ -84,12 +75,6 @@
 (def max-wb-size 1000)
 
 (def indices-hash (make-hash-table))
-
-(def (usage-verb verb)
-  (let ((howto (hash-get interactives verb)))
-    (displayln "Wrong number of arguments. Usage is:")
-    (displayln program-name " " (hash-get howto usage:))
-    (exit 2)))
 
 (def (load-config)
   (let ((config (hash)))
@@ -399,8 +384,6 @@
     hcn))
 
 (def (add-val-db val)
-  (set! db-type lmdb:)
-  (displayln "add-val-db: val: " val " db-type: " db-type)
   (let ((seen (db-key? val))
 	(hcn 0))
     (if seen
@@ -588,8 +571,7 @@
     count))
 
 (def (load-vpc dir)
-  (let ((files 0)
-	(rows 0)
+  (let ((rows 0)
 	(btime 0)
 	(total-count 0)
 	(etime 0)
@@ -676,25 +658,25 @@
                 (let-hash .sessionContext
                   (set! username (hash-ref .sessionIssuer 'userName)))))
              (else
-              (set! username (format "Unknown Type: ~a" (stringify-hash ui)))))
-            (displayln "error: type :" type " not found in ui" (stringify-hash ui))))))
+              (set! username (format "Unknown Type: ~a" (hash->str ui)))))
+            (displayln "error: type :" type " not found in ui" (hash->str ui))))))
     username))
 
-(def vpc-fields [
-                 bytez
-                 date
-                 dstaddr
-                 dstport
-                 endf
-                 interface-id
-                 packets
-                 protocol
-                 srcaddr
-                 srcport
-                 start
-                 status
-                 action
-                 ])
+(def vpc-fields '(
+                  bytez
+                  date
+                  dstaddr
+                  dstport
+                  endf
+                  interface-id
+                  packets
+                  protocol
+                  srcaddr
+                  srcport
+                  start
+                  status
+                  action
+                  ))
 
 (def (search-event-obj look-for)
   (let ((index-name (format "I-~a" look-for)))
@@ -702,10 +684,6 @@
       (let ((matches (hash-keys (db-get index-name))))
         (resolve-records matches))
       (displayln "Could not find entry in indices-db for " look-for))))
-
-(def (float->int num)
-  (inexact->exact
-   (round num)))
 
 (def (inc-hash hashy key)
   (dp (format "~a:~a" (hash->list hashy) key))
