@@ -65,7 +65,7 @@
 
 (def hc-hash (make-hash-table))
 (def lru-miss-table (make-hash-table))
-(def hc-lru (make-lru-cache (def-num max-lru-size)))
+(def hc-lru (make-lru-cache (any->int max-lru-size)))
 (def vpc-totals (make-hash-table))
 
 (def HC 0)
@@ -144,7 +144,7 @@
 
 (def (load-ct dir)
   (db-open leveldb: "test")
-  ;;(##gc-report-set! #t)
+  (##gc-report-set! #t)
   (dp (format "load-ct: ~a" dir))
   ;;  (spawn watch-heap!)
   (load-indices-hash)
@@ -273,7 +273,7 @@
       (set! lru-miss-percent (float->int (* (/ lru-misses-file lru-totals) 100)))
       (displayln
        " lru % used: "
-       (float->int (* (/ (lru-cache-size hc-lru) (def-num max-lru-size)) 100))
+       (float->int (* (/ (lru-cache-size hc-lru) (any->int max-lru-size)) 100))
        " lru misses: " lru-misses-file
        " lru hits: " lru-hits-file
        " hit %: " lru-hit-percent
@@ -548,7 +548,7 @@
 (def (add-bytez cid bytez)
   (if (hash-key? vpc-totals cid)
     (let ((total (hash-get vpc-totals cid))) ;; we have this key, let's update total
-      (hash-put! vpc-totals cid (+ (def-num total) (def-num bytez))))
+      (hash-put! vpc-totals cid (+ (any->int total) (any->int bytez))))
     (hash-put! vpc-totals cid bytez))) ;; new entry to be created and total
 
 (def (read-vpc-file file)
