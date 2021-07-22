@@ -32,6 +32,10 @@
   :ober/oberlib)
 
 (export #t)
+(def db-type lmdb:)
+
+(def nil '#(nil))
+
 (declare (not optimize-dead-definitions))
 (def version "0.04")
 
@@ -53,9 +57,6 @@
 	(hash-put! hc-hash cid convo)))
     cid))
 
-(def (list-vpc-records)
-  (+ 1 1))
-
 (def max-lru-size (or (getenv "LRU" #f) 10000))
 (def use-write-backs #t)
 (def lru-hits 0)
@@ -67,6 +68,12 @@
 (def lru-miss-table (make-hash-table))
 (def hc-lru (make-lru-cache (any->int max-lru-size)))
 (def vpc-totals (make-hash-table))
+
+(def records (db-open))
+(def env records)
+(def wb (db-init))
+(def db wb)
+(def db-dir (or (getenv "KUNABI" #f) ".")) ;;(format "~a/kunabi-db/" (user-info-home (user-info (user-name))))))
 
 (def HC 0)
 
@@ -457,7 +464,6 @@
   (for (cid (hash-keys vpc-totals))
     (db-batch (format "~a" cid) (hash-get vpc-totals cid))))
 
-
 (def (list-index-entries idx)
   (if (db-key? idx)
     (let ((entries (hash-keys (db-get idx))))
@@ -774,3 +780,147 @@
     (if (table? res)
       (hash->list res)
       res)))
+
+;; db stuff
+
+(def (db-batch batch key value)
+  ;;  (if (table? value)
+  ;;    (displayln "db-batch:got table in value key:" key " value hash:"  (hash->list value)))
+  ;;  (dp (format "db-batch: key: ~a value: ~a" key value))
+  (cond
+   ((equal? db-type lmdb:)
+    (put-lmdb key value))
+   ((equal? db-type leveldb:)
+    (unless (string? key) (dp (format "key: ~a val: ~a" (type-of key) (type-of value))))
+    (leveldb-writebatch-put wb key (object->u8vector value)))
+   (else
+    (displayln "Unknown db-type: " db-type)
+    (exit 2))))
+
+(def (db-put db2 key value)
+  ;;  (dp (format "db-put: key: ~a val: ~a" key value))
+  (cond
+   ((equal? db-type lmdb:)
+    (put-lmdb key value))
+   ((equal? db-type leveldb:)
+    (leveldb-put db2 key (object->u8vector value)))
+   (else
+    (displayln "Unknown db-type: " db-type)
+    (exit 2))))
+
+(def (db-open)
+  (dp "in db-open")
+  (cond
+   ((equal? db-type lmdb:)
+    (lmdb-open-db env "kunabi-store"))
+   ((equal? db-type leveldb:)
+    (unless (file-exists? db-dir)
+      (create-directory* db-dir))
+    (let ((location (format "~a/records" db-dir)))
+      (leveldb-open location (leveldb-options
+			      block-size: (def-num (getenv "k_block_size" #f))
+			      write-buffer-size: (def-num (getenv "k_write_buffer_size" #f))
+			      lru-cache-capacity: (def-num (getenv "k_lru_cache_capacity" #f))))))
+   (else
+    (displayln "Unknown db-type: " db-type)
+    (exit 2))))
+
+(def (def-num num)
+  (if (string? num)
+    (string->number num)
+    num))
+
+(def (put-lmdb key val)
+  (let* ((bytes (call-with-output-u8vector [] (cut write-json val <>)))
+	 (bytes (compress bytes))
+	 (txn (lmdb-txn-begin env)))
+    (try
+     (lmdb-put txn db key bytes)
+     (lmdb-txn-commit txn)
+     (catch (e)
+       (lmdb-txn-abort txn)
+       (raise e)))))
+
+(def (db-get db key)
+  (dp (format "db-get: ~a" key))
+  (cond
+   ((equal? db-type lmdb:)
+    (get-lmdb key))
+   ((equal? db-type leveldb:)
+    (let ((ret (leveldb-get db (format "~a" key))))
+      (if (u8vector? ret)
+	(u8vector->object ret)
+	"N/A")))
+   (else
+    (displayln "Unknown db-type: " db-type)
+    (exit 2))))
+
+(def (get-lmdb key)
+  (let (txn (lmdb-txn-begin env))
+    (try
+     (let* ((bytes (lmdb-get txn db key))
+	    (val (if bytes
+		   (call-with-input-u8vector (uncompress bytes) read-json)
+		   nil)))
+       (lmdb-txn-commit txn)
+       val)
+     (catch (e)
+       (lmdb-txn-abort txn)
+       (display e)
+       (displayln "error kunabi-store-get: key:" key)
+       ;;(raise e)
+       ))))
+
+(def (db-key? db2 key)
+  (dp (format "in db-key? db2: ~a key: ~a" db2 key))
+  (cond
+   ((equal? db-type lmdb:)
+    (or (get-lmdb key) #f))
+   ((equal? db-type leveldb:)
+    (leveldb-key? db2 (format "~a" key)))
+   (else
+    (displayln "Unknown db-type: " db-type)
+    (exit 2))))
+
+(def (db-write db wb)
+  (dp "in db-write")
+  (cond
+   ((equal? db-type lmdb:)
+    (displayln "db-write wb lmdb: noop"))
+   ((equal? db-type leveldb:)
+    (leveldb-write db wb))
+   (else
+    (displayln "Unknown db-type: " db-type)
+    (exit 2))))
+
+(def (db-close db)
+  (dp "in db-close")
+  (cond
+   ((equal? db-type lmdb:)
+    (displayln "db-close lmdb:"))
+   ((equal? db-type leveldb:)
+    (leveldb-close db))
+   (else
+    (displayln "Unknown db-type: " db-type)
+    (exit 2))))
+
+(def (db-init)
+  (dp "in db-init")
+  (cond
+   ((equal? db-type lmdb:)
+    (displayln "db-init lmdb noop"))
+   ((equal? db-type leveldb:)
+    (leveldb-writebatch))
+   (else
+    (displayln "Unknown db-type: " db-type)
+    (exit 2))))
+
+(def (list-vpc-records)
+  (def itor (leveldb-iterator records))
+  (leveldb-iterator-seek-first itor)
+  (while (leveldb-iterator-valid? itor)
+    (begin
+      (print-record
+       (leveldb-iterator-value itor))
+      (leveldb-iterator-next itor)))
+  (leveldb-iterator-close itor))
