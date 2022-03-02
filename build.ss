@@ -8,4 +8,5 @@
     (static-exe:
      "kunabi/kunabi"
      "-ld-options"
-     "-lpthread -lyaml -ldl -lssl -lz -L/usr/lib64 -L/usr/pkg/lib -I/usr/pkg/include")))
+     "-lpthread -lleveldb -llmdb -lyaml -ldl -lssl -lz -L/usr/lib64 -L/usr/pkg/lib -I/usr/pkg/include"))
+  verbose: 10)

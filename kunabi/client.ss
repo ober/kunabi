@@ -150,7 +150,7 @@
   (load-ct file))
 
 (def (load-ct dir)
-  (db-open leveldb: "test")
+  (db-open);; leveldb: "test")
   (##gc-report-set! #t)
   (dp (format "load-ct: ~a" dir))
   ;;  (spawn watch-heap!)
@@ -783,7 +783,7 @@
 
 ;; db stuff
 
-(def (db-batch batch key value)
+(def (db-batch key value)
   ;;  (if (table? value)
   ;;    (displayln "db-batch:got table in value key:" key " value hash:"  (hash->list value)))
   ;;  (dp (format "db-batch: key: ~a value: ~a" key value))
@@ -797,13 +797,13 @@
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
 
-(def (db-put db2 key value)
+(def (db-put key value)
   ;;  (dp (format "db-put: key: ~a val: ~a" key value))
   (cond
    ((equal? db-type lmdb:)
     (put-lmdb key value))
    ((equal? db-type leveldb:)
-    (leveldb-put db2 key (object->u8vector value)))
+    (leveldb-put db key (object->u8vector value)))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
@@ -841,7 +841,7 @@
        (lmdb-txn-abort txn)
        (raise e)))))
 
-(def (db-get db key)
+(def (db-get key)
   (dp (format "db-get: ~a" key))
   (cond
    ((equal? db-type lmdb:)
@@ -871,18 +871,17 @@
        ;;(raise e)
        ))))
 
-(def (db-key? db2 key)
-  (dp (format "in db-key? db2: ~a key: ~a" db2 key))
+(def (db-key? key)
   (cond
    ((equal? db-type lmdb:)
     (or (get-lmdb key) #f))
    ((equal? db-type leveldb:)
-    (leveldb-key? db2 (format "~a" key)))
+    (leveldb-key? db (format "~a" key)))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
 
-(def (db-write db wb)
+(def (db-write)
   (dp "in db-write")
   (cond
    ((equal? db-type lmdb:)
@@ -893,7 +892,7 @@
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
 
-(def (db-close db)
+(def (db-close)
   (dp "in db-close")
   (cond
    ((equal? db-type lmdb:)
