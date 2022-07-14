@@ -1,27 +1,39 @@
-default: kunabi
+PROJECT := kunabi
 
-SYSTEM := $(shell uname -s)
+NAME := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
+DOCKER_IMAGE := "jaimef/alpine-current:static"
 
-ifeq ($(SYSTEM),Darwin)
-SSL-BASE :=$(lastword $(wildcard /usr/local/Cellar/openssl/*/))
-SED := sed
-MYSQL-BASE := $(lastword $(wildcard /usr/local/Cellar/mysql/*/))
-LEVELDB-BASE := $(lastword $(wildcard /usr/local/Cellar/leveldb/*/))
-LMDB-BASE := $(lastword $(wildcard /usr/local/Cellar/lmdb/*/))
-LIBYAML-BASE := $(lastword $(wildcard /usr/local/Cellar/libyaml/*/))
-$(eval LDFLAGS := "-L$(SSL-BASE)lib -L$(MYSQL-BASE)lib -L$(LIBYAML-BASE)lib -L$(LEVELDB-BASE)lib -L$(LMDB-BASE)lib -lleveldb -lz -llmdb -lssl -lyaml -L/usr/local/lib")
-$(eval CPPFLAGS := "-I$(SSL-BASE)include -I$(MYSQL-BASE)include -I$(LIBYAML-BASE)include -I$(LEVELDB-BASE)include -I$(LMDB-BASE)include -I/usr/local/include")
-else
-LDFLAGS := "-L/usr/lib -lssl -lyaml"
-CPPFLAGS := "-I/usr/include"
-LIBYAML-BASE := "/usr/include"
-SED := sed
-endif
+$(info "name is " $(NAME))
+$(eval uid := $(shell id -u))
+$(eval gid := $(shell id -g))
 
-$(info $(CPPFLAGS) is cppflags)
-$(info $(LDFLAGS) is ldflags)
+default: linux-static-docker
 
-kunabi: $(eval CPPFLAGS := "-I$(SSL-BASE)include -I$(MYSQL-BASE)include -I$(LIBYAML-BASE)include -I$(LEVELDB-BASE)include -I$(LMDB-BASE)include -I/usr/local/include")
-kunabi: $(eval LDFLAGS := "-L$(SSL-BASE)lib -L$(MYSQL-BASE)lib -L$(LIBYAML-BASE)lib -L$(LEVELDB-BASE)lib -L$(LMDB-BASE)lib -lleveldb -lz -llmdb -lssl -lyaml -L/usr/local/lib")
-kunabi:
-	./build.ss
+deps:
+	/usr/bin/time -avp $(GERBIL_HOME)/bin/gxpkg install github.com/ober/oberlib
+	/usr/bin/time -avp $(GERBIL_HOME)/bin/gxpkg install github.com/yanndegat/colorstring
+
+build: deps
+	$(GERBIL_HOME)/bin/gxpkg link $(PROJECT) /src || true
+	$(GERBIL_HOME)/bin/gxpkg build $(PROJECT)
+
+linux-static-docker:
+	docker run -it \
+	-e GERBIL_PATH=/tmp/.gerbil \
+	-u "$(uid):$(gid)" \
+    -v $(PWD):/src \
+	$(DOCKER_IMAGE) \
+	make -C /src linux-static
+
+linux-static: build
+	/usr/bin/time -avp $(GERBIL_HOME)/bin/gxc -o $(PROJECT)-bin -static \
+	-cc-options "-Bstatic" \
+	-g -gsrc -genv \
+	-ld-options "-static -lpthread -L/usr/lib/x86_64-linux-gnu -lssl -ldl -lyaml -lz " \
+	-exe $(PROJECT)/$(PROJECT).ss
+
+clean:
+	rm -Rf $(PROJECT)-bin
+
+install:
+	mv $(PROJECT)-bin /usr/local/bin/$(PROJECT)
