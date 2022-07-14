@@ -1,9 +1,7 @@
 PROJECT := kunabi
 
-NAME := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
-DOCKER_IMAGE := "jaimef/alpine-current:static"
+DOCKER_IMAGE := "gerbil/alpine"
 
-$(info "name is " $(NAME))
 $(eval uid := $(shell id -u))
 $(eval gid := $(shell id -g))
 
