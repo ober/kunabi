@@ -11,7 +11,7 @@
   :std/db/postgresql
   :std/db/postgresql-driver
   :std/db/lmdb
-  :std/db/leveldb
+  ;;:std/db/leveldb
   :std/debug/heap
   :std/debug/memleak
   :std/format

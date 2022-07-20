@@ -11,7 +11,7 @@
   :std/db/postgresql
   :std/db/postgresql-driver
   :std/db/lmdb
-  :std/db/leveldb
+  ;;  :std/db/leveldb
   :std/debug/heap
   :std/debug/memleak
   :std/format
@@ -69,8 +69,9 @@
 (def hc-lru (make-lru-cache (any->int max-lru-size)))
 (def vpc-totals (make-hash-table))
 
+(def env (lmdb-open "/home/jafourni/lmdb-test"))
 (def records (db-open))
-(def env records)
+
 (def wb (db-init))
 (def db wb)
 (def db-dir (or (getenv "KUNABI" #f) ".")) ;;(format "~a/kunabi-db/" (user-info-home (user-info (user-name))))))
@@ -97,8 +98,8 @@
 (def (list-records)
   (displayln "list-records not implemented"))
 
-(def (lsv)
-  (list-vpc-records))
+;; (def (lsv)
+;;   (list-vpc-records))
 
 (def (lvf file)
   (read-vpc-file file))
@@ -150,7 +151,6 @@
   (load-ct file))
 
 (def (load-ct dir)
-  (db-open);; leveldb: "test")
   (##gc-report-set! #t)
   (dp (format "load-ct: ~a" dir))
   ;;  (spawn watch-heap!)
@@ -790,9 +790,9 @@
   (cond
    ((equal? db-type lmdb:)
     (put-lmdb key value))
-   ((equal? db-type leveldb:)
-    (unless (string? key) (dp (format "key: ~a val: ~a" (type-of key) (type-of value))))
-    (leveldb-writebatch-put wb key (object->u8vector value)))
+   ;; ((equal? db-type leveldb:)
+   ;;  (unless (string? key) (dp (format "key: ~a val: ~a" (type-of key) (type-of value))))
+   ;;  (leveldb-writebatch-put wb key (object->u8vector value)))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
@@ -802,8 +802,8 @@
   (cond
    ((equal? db-type lmdb:)
     (put-lmdb key value))
-   ((equal? db-type leveldb:)
-    (leveldb-put db key (object->u8vector value)))
+   ;; ((equal? db-type leveldb:)
+   ;;  (leveldb-put db key (object->u8vector value)))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
@@ -813,14 +813,15 @@
   (cond
    ((equal? db-type lmdb:)
     (lmdb-open-db env "kunabi-store"))
-   ((equal? db-type leveldb:)
-    (unless (file-exists? db-dir)
-      (create-directory* db-dir))
-    (let ((location (format "~a/records" db-dir)))
-      (leveldb-open location (leveldb-options
-			      block-size: (def-num (getenv "k_block_size" #f))
-			      write-buffer-size: (def-num (getenv "k_write_buffer_size" #f))
-			      lru-cache-capacity: (def-num (getenv "k_lru_cache_capacity" #f))))))
+
+   ;; ((equal? db-type leveldb:)
+   ;;  (unless (file-exists? db-dir)
+   ;;    (create-directory* db-dir))
+    ;; (let ((location (format "~a/records" db-dir)))
+    ;;   (leveldb-open location (leveldb-options
+    ;;     		      block-size: (def-num (getenv "k_block_size" #f))
+    ;;     		      write-buffer-size: (def-num (getenv "k_write_buffer_size" #f))
+    ;;     		      lru-cache-capacity: (def-num (getenv "k_lru_cache_capacity" #f))))))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
@@ -831,9 +832,11 @@
     num))
 
 (def (put-lmdb key val)
+  (dp (format "put-lmdb ~a ~a" key val))
   (let* ((bytes (call-with-output-u8vector [] (cut write-json val <>)))
-	 (bytes (compress bytes))
+;;	 (bytes2 (compress bytes))
 	 (txn (lmdb-txn-begin env)))
+    (dp (format "txn is type ~a" (type-of txn)))
     (try
      (lmdb-put txn db key bytes)
      (lmdb-txn-commit txn)
@@ -846,16 +849,17 @@
   (cond
    ((equal? db-type lmdb:)
     (get-lmdb key))
-   ((equal? db-type leveldb:)
-    (let ((ret (leveldb-get db (format "~a" key))))
-      (if (u8vector? ret)
-	(u8vector->object ret)
-	"N/A")))
+   ;; ((equal? db-type leveldb:)
+   ;;  (let ((ret (leveldb-get db (format "~a" key))))
+   ;;    (if (u8vector? ret)
+   ;;      (u8vector->object ret)
+   ;;      "N/A")))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
 
 (def (get-lmdb key)
+  (dp (format "get-lmdb: ~a env: ~a" key (type-of env)))
   (let (txn (lmdb-txn-begin env))
     (try
      (let* ((bytes (lmdb-get txn db key))
@@ -865,18 +869,19 @@
        (lmdb-txn-commit txn)
        val)
      (catch (e)
-       (lmdb-txn-abort txn)
-       (display e)
+;;       (lmdb-txn-abort txn)
+       (display-exception e)
        (displayln "error kunabi-store-get: key:" key)
        ;;(raise e)
        ))))
 
 (def (db-key? key)
+  (dp (format "in db-key? with ~a" key))
   (cond
    ((equal? db-type lmdb:)
     (or (get-lmdb key) #f))
-   ((equal? db-type leveldb:)
-    (leveldb-key? db (format "~a" key)))
+   ;; ((equal? db-type leveldb:)
+   ;;  (leveldb-key? db (format "~a" key)))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
@@ -886,8 +891,8 @@
   (cond
    ((equal? db-type lmdb:)
     (displayln "db-write wb lmdb: noop"))
-   ((equal? db-type leveldb:)
-    (leveldb-write db wb))
+   ;; ((equal? db-type leveldb:)
+   ;;  (leveldb-write db wb))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
@@ -897,8 +902,8 @@
   (cond
    ((equal? db-type lmdb:)
     (displayln "db-close lmdb:"))
-   ((equal? db-type leveldb:)
-    (leveldb-close db))
+   ;; ((equal? db-type leveldb:)
+   ;;  (leveldb-close db))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
@@ -908,18 +913,18 @@
   (cond
    ((equal? db-type lmdb:)
     (displayln "db-init lmdb noop"))
-   ((equal? db-type leveldb:)
-    (leveldb-writebatch))
+   ;; ((equal? db-type leveldb:)
+   ;;  (leveldb-writebatch))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
 
-(def (list-vpc-records)
-  (def itor (leveldb-iterator records))
-  (leveldb-iterator-seek-first itor)
-  (while (leveldb-iterator-valid? itor)
-    (begin
-      (print-record
-       (leveldb-iterator-value itor))
-      (leveldb-iterator-next itor)))
-  (leveldb-iterator-close itor))
+;; (def (list-vpc-records)
+;;   (def itor (leveldb-iterator records))
+;;   (leveldb-iterator-seek-first itor)
+;;   (while (leveldb-iterator-valid? itor)
+;;     (begin
+;;       (print-record
+;;        (leveldb-iterator-value itor))
+;;       (leveldb-iterator-next itor)))
+;;   (leveldb-iterator-close itor))
