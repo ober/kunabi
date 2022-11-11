@@ -1,4 +1,4 @@
-;; -*- Gerbil -*-
+                                        ; -*- Gerbil -*-
 ;;; © jfournier
 ;;; aws cloudtrail parser
 
@@ -11,7 +11,7 @@
   :std/db/postgresql
   :std/db/postgresql-driver
   :std/db/lmdb
-  ;;  :std/db/leveldb
+  :std/db/leveldb
   :std/debug/heap
   :std/debug/memleak
   :std/format
@@ -32,7 +32,7 @@
   :ober/oberlib)
 
 (export #t)
-(def db-type lmdb:)
+(def db-type leveldb:) ;;lmdb:)
 
 (def nil '#(nil))
 
@@ -46,15 +46,15 @@
   (let ((cid 0))
     (if (hash-key? hc-hash convo)
       (begin ;; we are a cache hit
-	(set! cid (hash-get hc-hash convo)))
+	    (set! cid (hash-get hc-hash convo)))
       (begin ;; no hash entry
-	(inc-hc)
-	(db-batch convo HC)
-	(db-batch (format "~a" HC) convo)
-	;;(displayln "HC is " HC)
-	(set! cid HC)
-	(hash-put! hc-hash convo cid)
-	(hash-put! hc-hash cid convo)))
+	    (inc-hc)
+	    (db-batch convo HC)
+	    (db-batch (format "~a" HC) convo)
+	    ;;(displayln "HC is " HC)
+	    (set! cid HC)
+	    (hash-put! hc-hash convo cid)
+	    (hash-put! hc-hash cid convo)))
     cid))
 
 (def max-lru-size (or (getenv "LRU" #f) 10000))
@@ -69,12 +69,12 @@
 (def hc-lru (make-lru-cache (any->int max-lru-size)))
 (def vpc-totals (make-hash-table))
 
-(def env (lmdb-open "/home/jafourni/lmdb-test"))
+(def env (lmdb-open "/tmp/lmdb-test"))
 (def records (db-open))
 
 (def wb (db-init))
-(def db wb)
-(def db-dir (or (getenv "KUNABI" #f) ".")) ;;(format "~a/kunabi-db/" (user-info-home (user-info (user-name))))))
+(def db records)
+
 
 (def HC 0)
 
@@ -151,40 +151,46 @@
   (load-ct file))
 
 (def (load-ct dir)
-  (##gc-report-set! #t)
-  (dp (format "load-ct: ~a" dir))
-  ;;  (spawn watch-heap!)
+  ;;(##gc-report-set! #t)
+  (dp (format ">-- load-ct: ~a" dir))
+  ;;(spawn watch-heap!)
   (load-indices-hash)
-  (displayln "load-ct post load-indices-hash")
+  (displayln ">>>>>>>>> load-ct post load-indices-hash")
   (let* ((files 0)
-	 (rows 0)
-	 (mod 1)
-	 (etime 0)
-	 (btime (time->seconds (current-time)))
-	 (total-count 0)
-	 (ct-files
-	  (find-files dir
-		      (lambda (filename)
-			(and (equal? (path-extension filename) ".gz")
-			     (not (equal? (path-strip-directory filename) ".gz"))))))
-	 (file-count (length ct-files)))
+	     (rows 0)
+	     (mod 1)
+	     (etime 0)
+	     (btime (time->seconds (current-time)))
+	     (total-count 0)
+	     (ct-files
+	      (find-files dir
+		              (lambda (filename)
+			            (and (equal? (path-extension filename) ".gz")
+			                 (not (equal? (path-strip-directory filename) ".gz"))))))
+	     (file-count (length ct-files)))
     (for (file ct-files)
       (read-ct-file file)
       (flush-all?))
     (hash-for-each
      (lambda (k v)
        (if (> v 1)
-	 (displayln k ":" v)))
+	     (displayln k ":" v)))
      lru-miss-table)
     (flush-indices-hash)
     (db-write)
     (db-close)))
 
 (def (file-already-processed? file)
-  (dp "in file-already-processed?")
-  (let* ((short (get-short file))
-	 (seen (db-key? (format "F-~a" short))))
-    seen))
+  ;; (dp "in file-already-processed?")
+  ;; (let* ((short (get-short file))
+  ;;        (seen (db-key? (format "F-~a" short))))
+  ;;   (displayln "file-already-processed? ~a" seen)
+  ;;   (if (void? seen)
+  ;;     (displayln "yes we've seen this")
+  ;;     (displayln "no we have not"))
+  ;;   (displayln "fap: ~a" (type-of seen))
+  ;;   seen))
+  #f)
 
 (def (add-to-index index entry)
   (dp (format "in add-to-index index: ~a entry: ~a" index entry))
@@ -193,13 +199,13 @@
     (if index-in-global-hash?
       (new-index-entry index entry)
       (begin
-	(dp (format "ati: index not in global hash for ~a. adding" index))
-	(hash-put! indices-hash index (hash))
-	(let ((have-db-entry-for-index (db-key? (format "I-~a" index))))
-	  (displayln (format "have-db-entry-for-index: ~a key: I-~a" have-db-entry-for-index index))
-	  (if have-db-entry-for-index
-	    (update-db-index index entry)
-	    (new-db-index index entry)))))))
+	    (dp (format "ati: index not in global hash for ~a. adding" index))
+	    (hash-put! indices-hash index (hash))
+	    (let ((have-db-entry-for-index (db-key? (format "I-~a" index))))
+	      (displayln (format "have-db-entry-for-index: ~a key: I-~a" have-db-entry-for-index index))
+	      (if have-db-entry-for-index
+	        (update-db-index index entry)
+	        (new-db-index index entry)))))))
 
 (def (new-index-entry index entry)
   "Add entry to index in global hash"
@@ -234,47 +240,47 @@
   (dp (format "read-ct-file: ~a" file))
   (unless (file-already-processed? file)
     (let ((lru-hits-begin lru-hits)
-	  (lru-misses-begin lru-misses)
-	  (btime (time->seconds (current-time)))
-	  (count 0)
-	  (pool []))
-      (dp (format "read-ct-file: ~a" file))
+	      (lru-misses-begin lru-misses)
+	      (btime (time->seconds (current-time)))
+	      (count 0)
+	      (pool []))
       (dp (memory-usage))
       (call-with-input-file file
-	(lambda (file-input)
-	  (let ((mytables (hash-ref
-			   (read-json
-			    (open-input-string
-			     (bytes->string
-			      (uncompress file-input))))
-			   'Records)))
-	    (for-each
-	      (lambda (row)
-		(set! count (+ count 1))
-		(process-row row))
-	      mytables)
-	    ;;(for-each
-	    ;;(lambda (t)
-	    ;;(thread-join! t))
-	    ;;pool)
-	    )))
+	    (lambda (file-input)
+	      (let ((mytables (hash-ref
+			               (read-json
+			                (open-input-string
+			                 (bytes->string
+			                  (uncompress file-input))))
+			               'Records)))
+	        (for-each
+	          (lambda (row)
+		        (set! count (+ count 1))
+                (dp (format "row-> ~a" (hash->list row)))
+                (process-row row))
+	          mytables)
+	        ;;(for-each
+	        ;;(lambda (t)
+	        ;;(thread-join! t))
+	        ;;pool)
+	        )))
       (mark-file-processed file)
       (displayln "rps: "
-		 (float->int (/ count (- (time->seconds (current-time)) btime))))
+		         (float->int (/ count (- (time->seconds (current-time)) btime))))
       (print-lru-stats lru-hits-begin lru-misses-begin))))
 
 (def (number-only val)
   (cond ((string? val)
-	 (number->string val))
-	((number? val)
-	 val)))
+	     (number->string val))
+	    ((number? val)
+	     val)))
 
 (def (print-lru-stats begin-hits begin-misses)
   (let* ((lru-hits-file (- lru-hits begin-hits))
-	 (lru-misses-file (- lru-misses begin-misses))
-	 (lru-totals (+ lru-hits-file lru-misses-file))
-	 (lru-hit-percent 0)
-	 (lru-miss-percent 0))
+	     (lru-misses-file (- lru-misses begin-misses))
+	     (lru-totals (+ lru-hits-file lru-misses-file))
+	     (lru-hit-percent 0)
+	     (lru-miss-percent 0))
     (when (> lru-totals 0)
       (set! lru-hit-percent (float->int (* (/ lru-hits-file lru-totals) 100)))
       (set! lru-miss-percent (float->int (* (/ lru-misses-file lru-totals) 100)))
@@ -290,27 +296,27 @@
   (cond
    ((string-rindex str #\_)
     => (lambda (ix)
-	 (cond
-	  ((string-index str #\. ix)
-	   => (lambda (jx)
-		(substring str (1+ ix) jx)))
-	  (else #f))))
+	     (cond
+	      ((string-index str #\. ix)
+	       => (lambda (jx)
+		        (substring str (1+ ix) jx)))
+	      (else #f))))
    (else str)))
 
 (define 101-fields [
-		    'awsRegion
-		    'eventID
-		    'eventName
-		    'eventSource
-		    'eventTime
-		    'eventType
-		    'recipientAccountId
-		    'requestID
-		    'requestParameters
-		    'responseElements
-		    'sourceIPAddress
-		    'userAgent
-		    'userIdentity])
+		            'awsRegion
+		            'eventID
+		            'eventName
+		            'eventSource
+		            'eventTime
+		            'eventType
+		            'recipientAccountId
+		            'requestID
+		            'requestParameters
+		            'responseElements
+		            'sourceIPAddress
+		            'userAgent
+		            'userIdentity])
 
 
 (def (getf field row)
@@ -320,8 +326,8 @@
   "Derefernce if a valid key in db. otherwise return"
   (dp (format "get-val: ~a string?:~a number?~a" hcn (string? hcn) (number? hcn)))
   (let* ((ret "N/A")
-	 (hcn-safe (format "~a" hcn))
-	 (in-lru (lru-cache-get hc-lru hcn-safe)))
+	     (hcn-safe (format "~a" hcn))
+	     (in-lru (lru-cache-get hc-lru hcn-safe)))
     (cond
      ((table? hcn)
       (set! ret hcn))
@@ -335,10 +341,10 @@
       (set! ret "0"))
      ((db-key? hcn-safe)
       (let ((db-val (db-get hcn-safe)))
-	(dp (format "db-val: ~a ~a" db-val hcn-safe) )
-	(set! ret db-val)
-	(lru-cache-put! hc-lru hcn-safe db-val)
-	))
+	    (dp (format "db-val: ~a ~a" db-val hcn-safe) )
+	    (set! ret db-val)
+	    (lru-cache-put! hc-lru hcn-safe db-val)
+	    ))
      (else
       (dp (format "get-val: unknown hcn pattern: ~a" hcn-safe))))
     ret))
@@ -362,16 +368,16 @@
     0)
    ((string? val)
     (let ((hc-lru-entry (lru-cache-get hc-lru val))
-	  (hcn 0))
+	      (hcn 0))
       (if hc-lru-entry
-	(begin ;; in cache
-	  (set! lru-hits (+ lru-hits 1))
-	  (set! hcn hc-lru-entry))
-	(begin ;; lru miss. if in db, fetch, push onto lru, if not, add to db, push to lru
-	  (dp (format "add-val: ~a " val))
-	  (miss-add val)
-	  ;;(displayln val)
-	  (set! hcn (add-val-db-lru val))))
+	    (begin ;; in cache
+	      (set! lru-hits (+ lru-hits 1))
+	      (set! hcn hc-lru-entry))
+	    (begin ;; lru miss. if in db, fetch, push onto lru, if not, add to db, push to lru
+	      (dp (format "add-val: ~a " val))
+	      (miss-add val)
+	      ;;(displayln val)
+	      (set! hcn (add-val-db-lru val))))
       hcn))
    (else
     (dp (type-of val))
@@ -379,28 +385,28 @@
 
 (def (add-val-db-lru val)
   (let ((seen (db-key? val))
-	(hcn 0))
+	    (hcn 0))
     (if seen
       (set! hcn (db-get val))
       (begin ;; not seen. need to bump HC and use new HC
-	(dp (format "db miss: ~a" val))
-	(inc-hc)
-	(set! hcn HC)
-	(db-batch val HC)
-	(db-batch (format "~a" HC) val)))
+	    (dp (format "db miss: ~a" val))
+	    (inc-hc)
+	    (set! hcn HC)
+	    (db-batch val HC)
+	    (db-batch (format "~a" HC) val)))
     (lru-cache-put! hc-lru val hcn)
     hcn))
 
 (def (add-val-db val)
   (let ((seen (db-key? val))
-	(hcn 0))
+	    (hcn 0))
     (if seen
       (set! hcn (db-get val))
       (begin ;; not seen. need to bump HC and use new HC
-	(inc-hc)
-	(set! hcn HC)
-	(db-batch val HC)
-	))
+	    (inc-hc)
+	    (set! hcn HC)
+	    (db-batch val HC)
+	    ))
     hcn))
 
 (def (flush-all?)
@@ -414,6 +420,7 @@
       (set! write-back-count 0))))
 
 (def (get-next-id max)
+  (dp (format "get-next-id: ~a" max))
   (let ((maxid (1+ max)))
     (if (db-key? (format "~a" maxid))
       (get-next-id maxid)
@@ -429,28 +436,28 @@
     (hash-for-each
      (lambda (k v)
        (let ((count (hash-length v)))
-	 (displayln k ":" count " v: " v " first:" (hash-keys v))
-	 (set! total (+ total count))))
+	     (displayln k ":" count " v: " v " first:" (hash-keys v))
+	     (set! total (+ total count))))
      indices-hash)
-    (displayln "idicies count total: " total)))
+    (displayln "indicies count total: " total)))
 
 (def (load-indices-hash)
-  (dp (format "in load-indices-hash: INDICES:~a" (db-key? "INDICES")))
+  (dp (format ">-- load-indices-hash: INDICES:~a" (db-key? "INDICES")))
   (inc-hc)
   (if (= (hash-length indices-hash) 0)
     (let ((has-key (db-key? "INDICES")))
-      (displayln "has-key " has-key)
+      (displayln ">>--- has-key " has-key)
       (if has-key
-	(begin ;; load it up.
-	  (dp (format "load-indices-hash records has no INDICES entry"))
-	  (let ((indices (db-get "INDICES")))
-	    (dp (hash->list indices))
-	    (for-each
-	      (lambda (index)
-		(displayln (format "index: ~a" index))
-		(let ((index-int (db-get index)))
-		  (hash-put! indices-hash index index-int)))
-	      indices)))))
+	    (begin ;; load it up.
+	      (dp (format "load-indices-hash records has no INDICES entry"))
+	      (let ((indices2 (db-get "INDICES")))
+            (dp (hash->list indices2))
+	        (for-each
+	          (lambda (index)
+                (displayln (format "index: ~a" index))
+		        (let ((index-int (db-get index)))
+		          (hash-put! indices-hash index index-int)))
+	          indices2)))))
     (displayln "No INDICES entry. skipping hash loading")))
 
 (def (flush-indices-hash)
@@ -468,13 +475,13 @@
   (if (db-key? idx)
     (let ((entries (hash-keys (db-get idx))))
       (if (list? entries)
-	(for-each
-	  (lambda (x)
-	    (displayln x))
-	  (sort! entries eq?))
-	(begin
-	  (displayln "did not get list back from entries")
-	  (type-of entries))))
+	    (for-each
+	      (lambda (x)
+	        (displayln x))
+	      (sort! entries eq?))
+	    (begin
+	      (displayln "did not get list back from entries")
+	      (type-of entries))))
     (displayln "no idx found for " idx)))
 
 (def (resolve-records ids)
@@ -491,64 +498,64 @@
   (if (pregexp-match "^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}" ip)
     (let ((lookup (host-info ip)))
       (if (host-info? lookup)
-	(let ((lookup-name (host-info-name lookup)))
-	  lookup-name)))
+	    (let ((lookup-name (host-info-name lookup)))
+	      lookup-name)))
     ip))
 
 (def (print-record row)
   (if (table? row)
     (let-hash row
       (displayln "|"
-		 .event-time
-		 "|"
-		 (get-val-t .?event-name)
-		 "|"
-		 (get-val-t .?user)
-		 "|"
-		 (get-val-t .?event-source)
-		 "|"
-		 (get-val-t .?source-ip-address)
-		 "|"
-		 (get-val-t .?event-type)
-		 "|"
-		 (get-val-t .?request-parameters)
-		 "|"
-		 (get-val-t .?user-agent)
-		 "|"
-		 (get-val-t .?error-code)
-		 "|"
-		 (get-val-t .?error-message)
-		 "|"
-		 ))))
+		         .event-time
+		         "|"
+		         (get-val-t .?event-name)
+		         "|"
+		         (get-val-t .?user)
+		         "|"
+		         (get-val-t .?event-source)
+		         "|"
+		         (get-val-t .?source-ip-address)
+		         "|"
+		         (get-val-t .?event-type)
+		         "|"
+		         (get-val-t .?request-parameters)
+		         "|"
+		         (get-val-t .?user-agent)
+		         "|"
+		         (get-val-t .?error-code)
+		         "|"
+		         (get-val-t .?error-message)
+		         "|"
+		         ))))
 
 (def (search-event look-for)
   (dp (format "look-for: ~a" look-for))
   (let ((index-name (format "I-~a" look-for)))
     (if (db-key? index-name)
       (let ((matches (hash-keys (db-get index-name))))
-	;;	(displayln matches)
-	(resolve-records matches))
+	    ;;	(displayln matches)
+	    (resolve-records matches))
       (displayln "Could not find entry in indices-db for " look-for))))
 
 (def (process-vpc-row row)
   (with ([ date
-	   version
-	   account_id
-	   interface-id
-	   srcaddr
-	   dstaddr
-	   srcport
-	   dstport
-	   protocol
-	   packets
-	   bytez
-	   start
-	   end
-	   action
-	   status
-	   ] (string-split row #\space))
+	       version
+	       account_id
+	       interface-id
+	       srcaddr
+	       dstaddr
+	       srcport
+	       dstport
+	       protocol
+	       packets
+	       bytez
+	       start
+	       end
+	       action
+	       status
+	       ] (string-split row #\space))
     (let* ((convo (format "C-~a-~a-~a-~a-~a" srcaddr srcport dstaddr dstport protocol))
-	   (cid (memo-cid convo)))
+	       (cid (memo-cid convo)))
       (add-bytez cid bytez))))
 
 (def (add-bytez cid bytez)
@@ -559,9 +566,9 @@
 
 (def (read-vpc-file file)
   (let ((count 0)
-	(bundle 100000)
-	(btime 0)
-	(etime 0))
+	    (bundle 100000)
+	    (btime 0)
+	    (etime 0))
     (unless (file-already-processed? file)
       (call-with-input-file file
         (lambda (file-input)
@@ -579,9 +586,9 @@
 
 (def (load-vpc dir)
   (let ((rows 0)
-	(btime 0)
-	(total-count 0)
-	(etime 0)
+	    (btime 0)
+	    (total-count 0)
+	    (etime 0)
         (files (find-files dir
                            (lambda (filename)
                              (and (equal? (path-extension filename) ".gz")
@@ -646,7 +653,7 @@
              ((string=? "IAMUser" type)
               (set! username .userName))
              ((string=? "AWSAccount" type)
-              (set! username (format "~a-~a" .accountId .principalId)))
+              (set! username (format "~a-~a" .?accountId .?principalId)))
              ((string=? "AssumedRole" type)
               (if (hash-key? ui 'sessionContext)
                 (let-hash
@@ -790,9 +797,9 @@
   (cond
    ((equal? db-type lmdb:)
     (put-lmdb key value))
-   ;; ((equal? db-type leveldb:)
-   ;;  (unless (string? key) (dp (format "key: ~a val: ~a" (type-of key) (type-of value))))
-   ;;  (leveldb-writebatch-put wb key (object->u8vector value)))
+   ((equal? db-type leveldb:)
+    (unless (string? key) (dp (format "key: ~a val: ~a" (type-of key) (type-of value))))
+    (leveldb-writebatch-put wb key (object->u8vector value)))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
@@ -802,26 +809,27 @@
   (cond
    ((equal? db-type lmdb:)
     (put-lmdb key value))
-   ;; ((equal? db-type leveldb:)
-   ;;  (leveldb-put db key (object->u8vector value)))
+   ((equal? db-type leveldb:)
+    (leveldb-put db key (object->u8vector value)))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
 
 (def (db-open)
-  (dp "in db-open")
+  (dp ">-- db-open")
   (cond
    ((equal? db-type lmdb:)
     (lmdb-open-db env "kunabi-store"))
-
-   ;; ((equal? db-type leveldb:)
-   ;;  (unless (file-exists? db-dir)
-   ;;    (create-directory* db-dir))
-    ;; (let ((location (format "~a/records" db-dir)))
-    ;;   (leveldb-open location (leveldb-options
-    ;;     		      block-size: (def-num (getenv "k_block_size" #f))
-    ;;     		      write-buffer-size: (def-num (getenv "k_write_buffer_size" #f))
-    ;;     		      lru-cache-capacity: (def-num (getenv "k_lru_cache_capacity" #f))))))
+   ((equal? db-type leveldb:)
+    (let ((db-dir (format "~a/kunabi-db/" (user-info-home (user-info (user-name))))))
+      (displayln (format "db-dir is ~a" db-dir))
+      (unless (file-exists? db-dir)
+        (create-directory* db-dir))
+      (let ((location (format "~a/records" db-dir)))
+        (leveldb-open location (leveldb-options
+                                block-size: (def-num (getenv "k_block_size" #f))
+                                write-buffer-size: (def-num (getenv "k_write_buffer_size" #f))
+       		              lru-cache-capacity: (def-num (getenv "k_lru_cache_capacity" #f)))))))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
@@ -831,11 +839,12 @@
     (string->number num)
     num))
 
+;; lmdb
+;;--------------------------------------------------------------------------------------------------------------
 (def (put-lmdb key val)
   (dp (format "put-lmdb ~a ~a" key val))
   (let* ((bytes (call-with-output-u8vector [] (cut write-json val <>)))
-;;	 (bytes2 (compress bytes))
-	 (txn (lmdb-txn-begin env)))
+	     (txn (lmdb-txn-begin env)))
     (dp (format "txn is type ~a" (type-of txn)))
     (try
      (lmdb-put txn db key bytes)
@@ -844,44 +853,45 @@
        (lmdb-txn-abort txn)
        (raise e)))))
 
+(def (get-lmdb key)
+  (dp (format "get-lmdb: ~a env: ~a db: ~a" key env db))
+  (let (txn (lmdb-txn-begin env))
+    (try
+     (let* ((bytes (lmdb-get txn db key))
+	        (val (if bytes
+		           (call-with-input-u8vector bytes read-json)
+		           nil)))
+       (lmdb-txn-commit txn)
+       val)
+     (catch (e)
+       (lmdb-txn-abort txn)
+       (display-exception e)
+       (displayln "error kunabi-store-get: key:" key)
+       (raise e)
+       ))))
+
 (def (db-get key)
   (dp (format "db-get: ~a" key))
   (cond
    ((equal? db-type lmdb:)
     (get-lmdb key))
-   ;; ((equal? db-type leveldb:)
-   ;;  (let ((ret (leveldb-get db (format "~a" key))))
-   ;;    (if (u8vector? ret)
-   ;;      (u8vector->object ret)
-   ;;      "N/A")))
+   ((equal? db-type leveldb:)
+    (let ((ret (leveldb-get db (format "~a" key))))
+      (if (u8vector? ret)
+        (u8vector->object ret)
+        "N/A")))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
 
-(def (get-lmdb key)
-  (dp (format "get-lmdb: ~a env: ~a" key (type-of env)))
-  (let (txn (lmdb-txn-begin env))
-    (try
-     (let* ((bytes (lmdb-get txn db key))
-	    (val (if bytes
-		   (call-with-input-u8vector (uncompress bytes) read-json)
-		   nil)))
-       (lmdb-txn-commit txn)
-       val)
-     (catch (e)
-;;       (lmdb-txn-abort txn)
-       (display-exception e)
-       (displayln "error kunabi-store-get: key:" key)
-       ;;(raise e)
-       ))))
 
 (def (db-key? key)
-  (dp (format "in db-key? with ~a" key))
+  (dp (format ">-- db-key? with ~a" key))
   (cond
    ((equal? db-type lmdb:)
     (or (get-lmdb key) #f))
-   ;; ((equal? db-type leveldb:)
-   ;;  (leveldb-key? db (format "~a" key)))
+   ((equal? db-type leveldb:)
+    (leveldb-key? db (format "~a" key)))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
@@ -891,8 +901,8 @@
   (cond
    ((equal? db-type lmdb:)
     (displayln "db-write wb lmdb: noop"))
-   ;; ((equal? db-type leveldb:)
-   ;;  (leveldb-write db wb))
+   ((equal? db-type leveldb:)
+    (leveldb-write db wb))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
@@ -902,8 +912,8 @@
   (cond
    ((equal? db-type lmdb:)
     (displayln "db-close lmdb:"))
-   ;; ((equal? db-type leveldb:)
-   ;;  (leveldb-close db))
+   ((equal? db-type leveldb:)
+    (leveldb-close db))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
@@ -912,9 +922,9 @@
   (dp "in db-init")
   (cond
    ((equal? db-type lmdb:)
-    (displayln "db-init lmdb noop"))
-   ;; ((equal? db-type leveldb:)
-   ;;  (leveldb-writebatch))
+    (displayln "lmdb noop db-init"))
+   ((equal? db-type leveldb:)
+    (leveldb-writebatch))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
@@ -928,3 +938,55 @@
 ;;        (leveldb-iterator-value itor))
 ;;       (leveldb-iterator-next itor)))
 ;;   (leveldb-iterator-close itor))
+
+(def (get-leveldb key)
+  (displayln "get-leveldb: " key)
+  (try
+   (let* ((bytes (leveldb-get db (format "~a" key)))
+	      (val (if (u8vector? bytes)
+		         (u8vector->object bytes)
+		         nil)))
+     val)
+   (catch (e)
+     (raise e))))
+
+(def (put-leveldb key val)
+  (displayln "put-leveldb: " key " " val)
+  (try
+   (leveldb-put db key (object->u8vector val))
+   (catch (e)
+     (raise e))))
+
+(def (update-leveldb key val)
+  (put-leveldb key val))
+
+(def (remove-leveldb key)
+  (dp (format "remove-leveldb: ~a" key)))
+
+(def (remove-lmdb key)
+  (displayln "remove! key:" key)
+  (let (txn (lmdb-txn-begin env))
+    (try
+     (lmdb-del txn db key)
+     (lmdb-txn-commit txn)
+     (catch (e)
+	   (lmdb-txn-abort txn)
+	   (raise e)))))
+
+(def (update-lmdb key val)
+  (let* ((txn (lmdb-txn-begin env))
+	     (bytes (lmdb-get txn db key))
+	     (current (if bytes
+		            (call-with-input-u8vector (uncompress bytes) read-json)
+		            nil))
+	     (new (if (table? current)
+		        (hash-put! current val #t)))
+	     (final (compress (call-with-output-u8vector [] (cut write-json new <>)))))
+    ;;(bytes (call-with-output-u8vector [] (cut write-json val <>)))
+    ;; (bytes (compress bytes))
+    (try
+     (lmdb-put txn db key final)
+     (lmdb-txn-commit txn)
+     (catch (e)
+	   (lmdb-txn-abort txn)
+	   (raise e)))))
