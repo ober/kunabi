@@ -26,7 +26,7 @@ linux-static-docker:
 linux-static: build
 	/usr/bin/time -avp $(GERBIL_HOME)/bin/gxc -o $(PROJECT)-bin -static \
 	-cc-options "-Bstatic" \
-	-ld-options "-static -lpthread -L/usr/lib/x86_64-linux-gnu -lssl -ldl -lyaml -lz " \
+	-ld-options "-static -lpthread -L/usr/lib/x86_64-linux-gnu -lleveldb -lssl -ldl -lyaml -lz " \
 	-exe $(PROJECT)/$(PROJECT).ss
 
 clean:

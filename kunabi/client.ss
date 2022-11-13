@@ -1,4 +1,4 @@
-                                        ; -*- Gerbil -*-
+;; -*- Gerbil -*-
 ;;; © jfournier
 ;;; aws cloudtrail parser
 
@@ -10,7 +10,7 @@
   :std/db/dbi
   :std/db/postgresql
   :std/db/postgresql-driver
-  :std/db/lmdb
+  ;;:std/db/lmdb
   :std/db/leveldb
   :std/debug/heap
   :std/debug/memleak
@@ -69,19 +69,15 @@
 (def hc-lru (make-lru-cache (any->int max-lru-size)))
 (def vpc-totals (make-hash-table))
 
-(def env (lmdb-open "/tmp/lmdb-test"))
+;;(def env (lmdb-open "/tmp/lmdb-test"))
 (def records (db-open))
 
 (def wb (db-init))
 (def db records)
 
-
 (def HC 0)
-
 (def write-back-count 0)
-
 (def max-wb-size 1000)
-
 (def indices-hash (make-hash-table))
 
 (def (load-config)
@@ -158,7 +154,8 @@
   (displayln ">>>>>>>>> load-ct post load-indices-hash")
   (let* ((files 0)
 	     (rows 0)
-	     (mod 1)
+         (count 0)
+         (mod 1)
 	     (etime 0)
 	     (btime (time->seconds (current-time)))
 	     (total-count 0)
@@ -168,9 +165,13 @@
 			            (and (equal? (path-extension filename) ".gz")
 			                 (not (equal? (path-strip-directory filename) ".gz"))))))
 	     (file-count (length ct-files)))
+
     (for (file ct-files)
       (read-ct-file file)
-      (flush-all?))
+      (set! count (+ 1 count))
+      (when (= count 30)
+        (flush-all?)
+        (set! count 0)))
     (hash-for-each
      (lambda (k v)
        (if (> v 1)
@@ -267,7 +268,8 @@
       (mark-file-processed file)
       (displayln "rps: "
 		         (float->int (/ count (- (time->seconds (current-time)) btime))))
-      (print-lru-stats lru-hits-begin lru-misses-begin))))
+      ;;(print-lru-stats lru-hits-begin lru-misses-begin))))
+      )))
 
 (def (number-only val)
   (cond ((string? val)
@@ -415,8 +417,8 @@
     (begin
       (displayln "writing.... " write-back-count)
       ;;(type-of (car (##process-statistics)))
-      (time (flush-indices-hash))
-      (time (db-write))
+      (flush-indices-hash)
+      (db-write)
       (set! write-back-count 0))))
 
 (def (get-next-id max)
@@ -731,7 +733,6 @@
        (display (format " ~a:~a " k v)))
      sum)))
 
-
 (def (process-row row)
   (dp (format "process-row: row: ~a" (hash->list row)))
   (let-hash row
@@ -757,8 +758,8 @@
 
       (set! write-back-count (+ write-back-count 1))
       (dp (format "process-row: doing db-batch on req-id: ~a on hash ~a" req-id (hash->list h)))
-      (spawn
-       (lambda ()
+;;      (spawn
+;;       (lambda ()
          (db-batch req-id h)
          (dp (format "------------- end of batch of req-id on hash ----------"))
          (when (string? .?errorCode)
@@ -773,7 +774,7 @@
                 ("events" .eventName)
                 (.eventName req-id)
                 ("aws-region" .awsRegion)
-                (.awsRegion req-id))))))))
+                (.awsRegion req-id))))))
 
 (def (add-to-indexes i-hash)
   (when (table? i-hash)
@@ -795,8 +796,8 @@
   ;;    (displayln "db-batch:got table in value key:" key " value hash:"  (hash->list value)))
   ;;  (dp (format "db-batch: key: ~a value: ~a" key value))
   (cond
-   ((equal? db-type lmdb:)
-    (put-lmdb key value))
+   ;; ((equal? db-type lmdb:)
+   ;;  (put-lmdb key value))
    ((equal? db-type leveldb:)
     (unless (string? key) (dp (format "key: ~a val: ~a" (type-of key) (type-of value))))
     (leveldb-writebatch-put wb key (object->u8vector value)))
@@ -807,8 +808,8 @@
 (def (db-put key value)
   ;;  (dp (format "db-put: key: ~a val: ~a" key value))
   (cond
-   ((equal? db-type lmdb:)
-    (put-lmdb key value))
+   ;; ((equal? db-type lmdb:)
+   ;;  (put-lmdb key value))
    ((equal? db-type leveldb:)
     (leveldb-put db key (object->u8vector value)))
    (else
@@ -818,8 +819,8 @@
 (def (db-open)
   (dp ">-- db-open")
   (cond
-   ((equal? db-type lmdb:)
-    (lmdb-open-db env "kunabi-store"))
+   ;; ((equal? db-type lmdb:)
+   ;;  (lmdb-open-db env "kunabi-store"))
    ((equal? db-type leveldb:)
     (let ((db-dir (format "~a/kunabi-db/" (user-info-home (user-info (user-name))))))
       (displayln (format "db-dir is ~a" db-dir))
@@ -829,7 +830,7 @@
         (leveldb-open location (leveldb-options
                                 block-size: (def-num (getenv "k_block_size" #f))
                                 write-buffer-size: (def-num (getenv "k_write_buffer_size" #f))
-       		              lru-cache-capacity: (def-num (getenv "k_lru_cache_capacity" #f)))))))
+       		                lru-cache-capacity: (def-num (getenv "k_lru_cache_capacity" #f)))))))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
@@ -841,40 +842,40 @@
 
 ;; lmdb
 ;;--------------------------------------------------------------------------------------------------------------
-(def (put-lmdb key val)
-  (dp (format "put-lmdb ~a ~a" key val))
-  (let* ((bytes (call-with-output-u8vector [] (cut write-json val <>)))
-	     (txn (lmdb-txn-begin env)))
-    (dp (format "txn is type ~a" (type-of txn)))
-    (try
-     (lmdb-put txn db key bytes)
-     (lmdb-txn-commit txn)
-     (catch (e)
-       (lmdb-txn-abort txn)
-       (raise e)))))
+;; (def (put-lmdb key val)
+;;   (dp (format "put-lmdb ~a ~a" key val))
+;;   (let* ((bytes (call-with-output-u8vector [] (cut write-json val <>)))
+;; 	     (txn (lmdb-txn-begin env)))
+;;     (dp (format "txn is type ~a" (type-of txn)))
+;;     (try
+;;      (lmdb-put txn db key bytes)
+;;      (lmdb-txn-commit txn)
+;;      (catch (e)
+;;        (lmdb-txn-abort txn)
+;;        (raise e)))))
 
-(def (get-lmdb key)
-  (dp (format "get-lmdb: ~a env: ~a db: ~a" key env db))
-  (let (txn (lmdb-txn-begin env))
-    (try
-     (let* ((bytes (lmdb-get txn db key))
-	        (val (if bytes
-		           (call-with-input-u8vector bytes read-json)
-		           nil)))
-       (lmdb-txn-commit txn)
-       val)
-     (catch (e)
-       (lmdb-txn-abort txn)
-       (display-exception e)
-       (displayln "error kunabi-store-get: key:" key)
-       (raise e)
-       ))))
+;; (def (get-lmdb key)
+;;   (dp (format "get-lmdb: ~a env: ~a db: ~a" key env db))
+;;   (let (txn (lmdb-txn-begin env))
+;;     (try
+;;      (let* ((bytes (lmdb-get txn db key))
+;; 	        (val (if bytes
+;; 		           (call-with-input-u8vector bytes read-json)
+;; 		           nil)))
+;;        (lmdb-txn-commit txn)
+;;        val)
+;;      (catch (e)
+;;        (lmdb-txn-abort txn)
+;;        (display-exception e)
+;;        (displayln "error kunabi-store-get: key:" key)
+;;        (raise e)
+;;        ))))
 
 (def (db-get key)
   (dp (format "db-get: ~a" key))
   (cond
-   ((equal? db-type lmdb:)
-    (get-lmdb key))
+   ;; ((equal? db-type lmdb:)
+   ;;  (get-lmdb key))
    ((equal? db-type leveldb:)
     (let ((ret (leveldb-get db (format "~a" key))))
       (if (u8vector? ret)
@@ -888,8 +889,8 @@
 (def (db-key? key)
   (dp (format ">-- db-key? with ~a" key))
   (cond
-   ((equal? db-type lmdb:)
-    (or (get-lmdb key) #f))
+   ;; ((equal? db-type lmdb:)
+   ;;  (or (get-lmdb key) #f))
    ((equal? db-type leveldb:)
     (leveldb-key? db (format "~a" key)))
    (else
@@ -899,8 +900,8 @@
 (def (db-write)
   (dp "in db-write")
   (cond
-   ((equal? db-type lmdb:)
-    (displayln "db-write wb lmdb: noop"))
+   ;; ((equal? db-type lmdb:)
+   ;;  (displayln "db-write wb lmdb: noop"))
    ((equal? db-type leveldb:)
     (leveldb-write db wb))
    (else
@@ -910,8 +911,8 @@
 (def (db-close)
   (dp "in db-close")
   (cond
-   ((equal? db-type lmdb:)
-    (displayln "db-close lmdb:"))
+   ;; ((equal? db-type lmdb:)
+   ;;  (displayln "db-close lmdb:"))
    ((equal? db-type leveldb:)
     (leveldb-close db))
    (else
@@ -921,8 +922,8 @@
 (def (db-init)
   (dp "in db-init")
   (cond
-   ((equal? db-type lmdb:)
-    (displayln "lmdb noop db-init"))
+   ;; ((equal? db-type lmdb:)
+   ;;  (displayln "lmdb noop db-init"))
    ((equal? db-type leveldb:)
     (leveldb-writebatch))
    (else
@@ -963,30 +964,30 @@
 (def (remove-leveldb key)
   (dp (format "remove-leveldb: ~a" key)))
 
-(def (remove-lmdb key)
-  (displayln "remove! key:" key)
-  (let (txn (lmdb-txn-begin env))
-    (try
-     (lmdb-del txn db key)
-     (lmdb-txn-commit txn)
-     (catch (e)
-	   (lmdb-txn-abort txn)
-	   (raise e)))))
+;; (def (remove-lmdb key)
+;;   (displayln "remove! key:" key)
+;;   (let (txn (lmdb-txn-begin env))
+;;     (try
+;;      (lmdb-del txn db key)
+;;      (lmdb-txn-commit txn)
+;;      (catch (e)
+;; 	   (lmdb-txn-abort txn)
+;; 	   (raise e)))))
 
-(def (update-lmdb key val)
-  (let* ((txn (lmdb-txn-begin env))
-	     (bytes (lmdb-get txn db key))
-	     (current (if bytes
-		            (call-with-input-u8vector (uncompress bytes) read-json)
-		            nil))
-	     (new (if (table? current)
-		        (hash-put! current val #t)))
-	     (final (compress (call-with-output-u8vector [] (cut write-json new <>)))))
-    ;;(bytes (call-with-output-u8vector [] (cut write-json val <>)))
-    ;; (bytes (compress bytes))
-    (try
-     (lmdb-put txn db key final)
-     (lmdb-txn-commit txn)
-     (catch (e)
-	   (lmdb-txn-abort txn)
-	   (raise e)))))
+;; (def (update-lmdb key val)
+;;   (let* ((txn (lmdb-txn-begin env))
+;; 	     (bytes (lmdb-get txn db key))
+;; 	     (current (if bytes
+;; 		            (call-with-input-u8vector (uncompress bytes) read-json)
+;; 		            nil))
+;; 	     (new (if (table? current)
+;; 		        (hash-put! current val #t)))
+;; 	     (final (compress (call-with-output-u8vector [] (cut write-json new <>)))))
+;;     ;;(bytes (call-with-output-u8vector [] (cut write-json val <>)))
+;;     ;; (bytes (compress bytes))
+;;     (try
+;;      (lmdb-put txn db key final)
+;;      (lmdb-txn-commit txn)
+;;      (catch (e)
+;; 	   (lmdb-txn-abort txn)
+;; 	   (raise e)))))
