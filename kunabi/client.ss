@@ -37,7 +37,7 @@
 (def nil '#(nil))
 
 (declare (not optimize-dead-definitions))
-(def version "0.04")
+(def version "0.05")
 
 (def program-name "kunabi")
 (def config-file "~/.kunabi.yaml")
@@ -62,7 +62,7 @@
 (def lru-hits 0)
 (def lru-misses 0)
 
-(setenv "GERBIL_HOME" (format "~a/gerbil" (user-info-home (user-info (user-name)))))
+(setenv "GERBIL_HOME" (format "~a/.gerbil" (user-info-home (user-info (user-name)))))
 
 (def hc-hash (make-hash-table))
 (def lru-miss-table (make-hash-table))
@@ -70,14 +70,14 @@
 (def vpc-totals (make-hash-table))
 
 ;;(def env (lmdb-open "/tmp/lmdb-test"))
-(def records (db-open))
+;;(def records (db-open))
 
 (def wb (db-init))
-(def db records)
+(def db (db-open))
 
 (def HC 0)
 (def write-back-count 0)
-(def max-wb-size 1000)
+(def max-wb-size 100000)
 (def indices-hash (make-hash-table))
 
 (def (load-config)
@@ -92,7 +92,15 @@
   (list-records))
 
 (def (list-records)
-  (displayln "list-records not implemented"))
+  "Print all records"
+  (let (itor (leveldb-iterator db))
+    (leveldb-iterator-seek-first itor)
+    (let lp ()
+      (displayln (format "k: ~a v: ~a"
+                         (bytes->string (leveldb-iterator-key itor))
+                         (bytes->string (leveldb-iterator-value itor))))
+      (when (leveldb-iterator-valid? itor)
+        (lp)))))
 
 ;; (def (lsv)
 ;;   (list-vpc-records))
@@ -116,6 +124,7 @@
   (search-event event))
 
 (def (lec)
+  (ensure-db)
   (list-index-entries "I-errors"))
 
 (def (read file)
@@ -126,6 +135,9 @@
 
 (def (list-events)
   (list-index-entries "I-events"))
+
+(def (lr)
+  (list-regions))
 
 (def (list-regions)
   (list-index-entries "I-aws-region"))
@@ -151,7 +163,6 @@
   (dp (format ">-- load-ct: ~a" dir))
   ;;(spawn watch-heap!)
   (load-indices-hash)
-  (displayln ">>>>>>>>> load-ct post load-indices-hash")
   (let* ((files 0)
 	     (rows 0)
          (count 0)
@@ -169,9 +180,8 @@
     (for (file ct-files)
       (read-ct-file file)
       (set! count (+ 1 count))
-      (when (= count 30)
-        (flush-all?)
-        (set! count 0)))
+      (flush-all?)
+      (set! count 0))
     (hash-for-each
      (lambda (k v)
        (if (> v 1)
@@ -182,16 +192,10 @@
     (db-close)))
 
 (def (file-already-processed? file)
-  ;; (dp "in file-already-processed?")
-  ;; (let* ((short (get-short file))
-  ;;        (seen (db-key? (format "F-~a" short))))
-  ;;   (displayln "file-already-processed? ~a" seen)
-  ;;   (if (void? seen)
-  ;;     (displayln "yes we've seen this")
-  ;;     (displayln "no we have not"))
-  ;;   (displayln "fap: ~a" (type-of seen))
-  ;;   seen))
-  #f)
+  (dp "in file-already-processed?")
+  (let* ((short (get-short file))
+         (seen (db-key? (format "F-~a" short))))
+    seen))
 
 (def (add-to-index index entry)
   (dp (format "in add-to-index index: ~a entry: ~a" index entry))
@@ -200,10 +204,10 @@
     (if index-in-global-hash?
       (new-index-entry index entry)
       (begin
-	    (dp (format "ati: index not in global hash for ~a. adding" index))
+	    (displayln (format "ati: index not in global hash for ~a. adding" index))
 	    (hash-put! indices-hash index (hash))
 	    (let ((have-db-entry-for-index (db-key? (format "I-~a" index))))
-	      (displayln (format "have-db-entry-for-index: ~a key: I-~a" have-db-entry-for-index index))
+	      (dp (format "have-db-entry-for-index: ~a key: I-~a" have-db-entry-for-index index))
 	      (if have-db-entry-for-index
 	        (update-db-index index entry)
 	        (new-db-index index entry)))))))
@@ -238,6 +242,7 @@
     (db-put (format "F-~a" short) "t")))
 
 (def (read-ct-file file)
+  (ensure-db)
   (dp (format "read-ct-file: ~a" file))
   (unless (file-already-processed? file)
     (let ((lru-hits-begin lru-hits)
@@ -267,15 +272,16 @@
 	        )))
       (mark-file-processed file)
       (displayln "rps: "
-		         (float->int (/ count (- (time->seconds (current-time)) btime))))
+                 (float->int (/ count (- (time->seconds (current-time)) btime))) " size: " count)
       ;;(print-lru-stats lru-hits-begin lru-misses-begin))))
       )))
 
 (def (number-only val)
-  (cond ((string? val)
-	     (number->string val))
-	    ((number? val)
-	     val)))
+  (cond
+   ((string? val)
+    (number->string val))
+   ((number? val)
+    val)))
 
 (def (print-lru-stats begin-hits begin-misses)
   (let* ((lru-hits-file (- lru-hits begin-hits))
@@ -433,6 +439,9 @@
   (set! HC (get-next-id HC))
   (db-put "HC" (format "~a" HC)))
 
+(def (report)
+  (indices-report))
+
 (def (indices-report)
   (let ((total 0))
     (hash-for-each
@@ -448,7 +457,7 @@
   (inc-hc)
   (if (= (hash-length indices-hash) 0)
     (let ((has-key (db-key? "INDICES")))
-      (displayln ">>--- has-key " has-key)
+      (displayln ">>--- Have INDICES " has-key)
       (if has-key
 	    (begin ;; load it up.
 	      (dp (format "load-indices-hash records has no INDICES entry"))
@@ -465,6 +474,7 @@
 (def (flush-indices-hash)
   (let ((indices (make-hash-table)))
     (for (index (hash-keys indices-hash))
+      (displayln "fih: index: " index)
       (db-batch (format "I-~a" index) (hash-get indices-hash index))
       (hash-put! indices index #t))
     (db-put "INDICES" indices)))
@@ -758,8 +768,8 @@
 
       (set! write-back-count (+ write-back-count 1))
       (dp (format "process-row: doing db-batch on req-id: ~a on hash ~a" req-id (hash->list h)))
-;;      (spawn
-;;       (lambda ()
+      (spawn
+       (lambda ()
          (db-batch req-id h)
          (dp (format "------------- end of batch of req-id on hash ----------"))
          (when (string? .?errorCode)
@@ -774,7 +784,7 @@
                 ("events" .eventName)
                 (.eventName req-id)
                 ("aws-region" .awsRegion)
-                (.awsRegion req-id))))))
+                (.awsRegion req-id))))))))
 
 (def (add-to-indexes i-hash)
   (when (table? i-hash)
@@ -816,13 +826,17 @@
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
 
+(def (ensure-db)
+  (unless db
+    (set! db (db-open))))
+
 (def (db-open)
   (dp ">-- db-open")
   (cond
    ;; ((equal? db-type lmdb:)
    ;;  (lmdb-open-db env "kunabi-store"))
    ((equal? db-type leveldb:)
-    (let ((db-dir (format "~a/kunabi-db/" (user-info-home (user-info (user-name))))))
+    (let ((db-dir ".")) ;;(format "~a/kunabi-/" (user-info-home (user-info (user-name))))))
       (displayln (format "db-dir is ~a" db-dir))
       (unless (file-exists? db-dir)
         (create-directory* db-dir))
@@ -830,7 +844,7 @@
         (leveldb-open location (leveldb-options
                                 block-size: (def-num (getenv "k_block_size" #f))
                                 write-buffer-size: (def-num (getenv "k_write_buffer_size" #f))
-       		                lru-cache-capacity: (def-num (getenv "k_lru_cache_capacity" #f)))))))
+                                lru-cache-capacity: (def-num (getenv "k_lru_cache_capacity" #f)))))))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
@@ -839,37 +853,6 @@
   (if (string? num)
     (string->number num)
     num))
-
-;; lmdb
-;;--------------------------------------------------------------------------------------------------------------
-;; (def (put-lmdb key val)
-;;   (dp (format "put-lmdb ~a ~a" key val))
-;;   (let* ((bytes (call-with-output-u8vector [] (cut write-json val <>)))
-;; 	     (txn (lmdb-txn-begin env)))
-;;     (dp (format "txn is type ~a" (type-of txn)))
-;;     (try
-;;      (lmdb-put txn db key bytes)
-;;      (lmdb-txn-commit txn)
-;;      (catch (e)
-;;        (lmdb-txn-abort txn)
-;;        (raise e)))))
-
-;; (def (get-lmdb key)
-;;   (dp (format "get-lmdb: ~a env: ~a db: ~a" key env db))
-;;   (let (txn (lmdb-txn-begin env))
-;;     (try
-;;      (let* ((bytes (lmdb-get txn db key))
-;; 	        (val (if bytes
-;; 		           (call-with-input-u8vector bytes read-json)
-;; 		           nil)))
-;;        (lmdb-txn-commit txn)
-;;        val)
-;;      (catch (e)
-;;        (lmdb-txn-abort txn)
-;;        (display-exception e)
-;;        (displayln "error kunabi-store-get: key:" key)
-;;        (raise e)
-;;        ))))
 
 (def (db-get key)
   (dp (format "db-get: ~a" key))
@@ -930,23 +913,14 @@
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
 
-;; (def (list-vpc-records)
-;;   (def itor (leveldb-iterator records))
-;;   (leveldb-iterator-seek-first itor)
-;;   (while (leveldb-iterator-valid? itor)
-;;     (begin
-;;       (print-record
-;;        (leveldb-iterator-value itor))
-;;       (leveldb-iterator-next itor)))
-;;   (leveldb-iterator-close itor))
-
+;; leveldb stuff
 (def (get-leveldb key)
   (displayln "get-leveldb: " key)
   (try
    (let* ((bytes (leveldb-get db (format "~a" key)))
-	      (val (if (u8vector? bytes)
-		         (u8vector->object bytes)
-		         nil)))
+          (val (if (u8vector? bytes)
+                 (u8vector->object bytes)
+                 nil)))
      val)
    (catch (e)
      (raise e))))
@@ -964,6 +938,8 @@
 (def (remove-leveldb key)
   (dp (format "remove-leveldb: ~a" key)))
 
+;; lmdb
+;;--------------------------------------------------------------------------------------------------------------
 ;; (def (remove-lmdb key)
 ;;   (displayln "remove! key:" key)
 ;;   (let (txn (lmdb-txn-begin env))
@@ -991,3 +967,43 @@
 ;;      (catch (e)
 ;; 	   (lmdb-txn-abort txn)
 ;; 	   (raise e)))))
+;;
+;; (def (put-lmdb key val)
+;;   (dp (format "put-lmdb ~a ~a" key val))
+;;   (let* ((bytes (call-with-output-u8vector [] (cut write-json val <>)))
+;; 	     (txn (lmdb-txn-begin env)))
+;;     (dp (format "txn is type ~a" (type-of txn)))
+;;     (try
+;;      (lmdb-put txn db key bytes)
+;;      (lmdb-txn-commit txn)
+;;      (catch (e)
+;;        (lmdb-txn-abort txn)
+;;        (raise e)))))
+
+;; (def (get-lmdb key)
+;;   (dp (format "get-lmdb: ~a env: ~a db: ~a" key env db))
+;;   (let (txn (lmdb-txn-begin env))
+;;     (try
+;;      (let* ((bytes (lmdb-get txn db key))
+;; 	        (val (if bytes
+;; 		           (call-with-input-u8vector bytes read-json)
+;; 		           nil)))
+;;        (lmdb-txn-commit txn)
+;;        val)
+;;      (catch (e)
+;;        (lmdb-txn-abort txn)
+;;        (display-exception e)
+;;        (displayln "error kunabi-store-get: key:" key)
+;;        (raise e)
+;;        ))))
+
+
+;; (def (list-vpc-records)
+;;   (def itor (leveldb-iterator records))
+;;   (leveldb-iterator-seek-first itor)
+;;   (while (leveldb-iterator-valid? itor)
+;;     (begin
+;;       (print-record
+;;        (leveldb-iterator-value itor))
+;;       (leveldb-iterator-next itor)))
+;;   (leveldb-iterator-close itor))

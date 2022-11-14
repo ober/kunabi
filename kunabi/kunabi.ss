@@ -11,7 +11,7 @@
   :std/db/postgresql
   :std/db/postgresql-driver
   ;;:std/db/lmdb
-  ;;:std/db/leveldb
+  :std/db/leveldb
   :std/debug/heap
   :std/debug/memleak
   :std/format
@@ -55,6 +55,7 @@
    ("sip" (hash (description: "sip <ip address> => list all records from ip address") (usage: "sip <ip address>") (count: 1)))
    ("sn" (hash (description: "sn <user name> => list all records for user name") (usage: "sn <username>") (count: 1)))
    ("sr" (hash (description: "sr <Region name> => list all records for region name") (usage: "sr <region name>") (count: 1)))
+   ("report" (hash (description: "report") (usage: "report") (count: 0)))
    ))
 
 (def (main . args)
@@ -71,7 +72,9 @@
 	(set! count 0))
       (unless (= (length args2) count)
 	(usage-verb verb))
-      (apply (eval (string->symbol (string-append "ober/kunabi/client#" verb))) args2))))
+      (apply (eval (string->symbol (string-append "ober/kunabi/client#" verb))) args2)))
+  (db-close)
+  )
 
 (def (usage-verb verb)
   (let ((howto (hash-get interactives verb)))
