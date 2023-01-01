@@ -42,6 +42,7 @@
 (def interactives
   (hash
    ("ct" (hash (description: "ct <directory> => Load all files in dir. ") (usage: "") (count: 1)))
+   ("compact" (hash (description: "Compact ") (usage: "compact") (count: 0)))
    ("le" (hash (description: "List all event names. ") (usage: "le") (count: 0)))
    ("lec" (hash (description: "lec => List all Error Codes") (usage: "lec") (count: 0)))
    ("lip" (hash (description: "lip => List all source ips") (usage: "lip") (count: 0)))
@@ -55,6 +56,7 @@
    ("sip" (hash (description: "sip <ip address> => list all records from ip address") (usage: "sip <ip address>") (count: 1)))
    ("sn" (hash (description: "sn <user name> => list all records for user name") (usage: "sn <username>") (count: 1)))
    ("sr" (hash (description: "sr <Region name> => list all records for region name") (usage: "sr <region name>") (count: 1)))
+   ("repairdb" (hash (description: "repairdb") (usage: "repairdb") (count: 0)))
    ("report" (hash (description: "report") (usage: "report") (count: 0)))
    ))
 
