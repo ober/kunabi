@@ -79,9 +79,8 @@
       (leveldb-iterator-next itor)
       (displayln (format "k: ~a"
                          (bytes->string (leveldb-iterator-key itor))))
-
       (when (leveldb-iterator-valid? itor)
-        (lp)))))
+        (lp))))
 
 (def (lvf file)
   (read-vpc-file file))
@@ -242,7 +241,7 @@
       (mark-file-processed file)
       (displayln "rps: "
                  (float->int (/ count (- (time->seconds (current-time)) btime))) " size: " count)
-      ;;(print-lru-stats lru-hits-begin lru-misses-begin))))
+      (print-lru-stats lru-hits-begin lru-misses-begin))))
       )))
 
 (def (number-only val)
@@ -663,6 +662,8 @@
         (let ((type (hash-get ui 'type)))
           (if type
             (cond
+             ((string=? "SAMLUser" type)
+              (set! username .userName))
              ((string=? "IAMUser" type)
               (set! username .userName))
              ((string=? "AWSAccount" type)
@@ -941,6 +942,16 @@
          (last (get-last-key)))
     (displayln "First: " first " Last: " last)
     (leveldb-compact-range db first last)))
+
+(def (countdb)
+  "Get a count of how many records are in db"
+  (let ((itor (leveldb-iterator db)))
+    (leveldb-iterator-seek-first itor)
+    (let lp ((count 1))
+      (leveldb-iterator-next itor)
+      (if (leveldb-iterator-valid? itor)
+        (lp (1+ count))
+        (displayln "total: " count)))))
 
 (def (repairdb)
   "Repair the db"
