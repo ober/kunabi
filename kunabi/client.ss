@@ -18,7 +18,7 @@
   :std/iter
   :std/logger
   :std/misc/list
-  :std/misc/lru
+;;  :std/misc/lru
   :std/net/address
   :std/net/httpd
   :std/pregexp
@@ -40,16 +40,16 @@
 (def program-name "kunabi")
 (def config-file "~/.kunabi.yaml")
 
-(def max-lru-size (or (getenv "LRU" #f) 10000))
+;;(def max-lru-size (or (getenv "LRU" #f) 10000))
 (def use-write-backs #t)
-(def lru-hits 0)
-(def lru-misses 0)
+;;(def lru-hits 0)
+;;(def lru-misses 0)
 
 (setenv "GERBIL_HOME" (format "~a/.gerbil" (user-info-home (user-info (user-name)))))
 
 (def hc-hash (make-hash-table))
-(def lru-miss-table (make-hash-table))
-(def hc-lru (make-lru-cache (any->int max-lru-size)))
+;;(def lru-miss-table (make-hash-table))
+;;(def hc-lru (make-lru-cache (any->int max-lru-size)))
 (def vpc-totals (make-hash-table))
 
 (def wb (db-init))
@@ -154,11 +154,11 @@
       (set! count (+ 1 count))
       (flush-all?)
       (set! count 0))
-    (hash-for-each
-     (lambda (k v)
-       (if (> v 1)
-	     (displayln k ":" v)))
-     lru-miss-table)
+    ;; (hash-for-each
+    ;;  (lambda (k v)
+    ;;    (if (> v 1)
+	;;      (displayln k ":" v)))
+    ;;  lru-miss-table)
     (flush-indices-hash)
     (db-write)
     (db-close)))
@@ -217,8 +217,9 @@
   (ensure-db)
   (dp (format "read-ct-file: ~a" file))
   (unless (file-already-processed? file)
-    (let ((lru-hits-begin lru-hits)
-	      (lru-misses-begin lru-misses)
+    (let (
+          ;;(lru-hits-begin lru-hits)
+	      ;;(lru-misses-begin lru-misses)
 	      (btime (time->seconds (current-time)))
 	      (count 0)
 	      (pool []))
@@ -251,22 +252,22 @@
    ((number? val)
     val)))
 
-(def (print-lru-stats begin-hits begin-misses)
-  (let* ((lru-hits-file (- lru-hits begin-hits))
-         (lru-misses-file (- lru-misses begin-misses))
-         (lru-totals (+ lru-hits-file lru-misses-file))
-         (lru-hit-percent 0)
-         (lru-miss-percent 0))
-    (when (> lru-totals 0)
-      (set! lru-hit-percent (float->int (* (/ lru-hits-file lru-totals) 100)))
-      (set! lru-miss-percent (float->int (* (/ lru-misses-file lru-totals) 100)))
-      (displayln
-       " lru % used: "
-       (float->int (* (/ (lru-cache-size hc-lru) (any->int max-lru-size)) 100))
-       " lru misses: " lru-misses-file
-       " lru hits: " lru-hits-file
-       " hit %: " lru-hit-percent
-       " miss %: " lru-miss-percent))))
+;; (def (print-lru-stats begin-hits begin-misses)
+;;   (let* ((lru-hits-file (- lru-hits begin-hits))
+;;          (lru-misses-file (- lru-misses begin-misses))
+;;          (lru-totals (+ lru-hits-file lru-misses-file))
+;;          (lru-hit-percent 0)
+;;          (lru-miss-percent 0))
+;;     (when (> lru-totals 0)
+;;       (set! lru-hit-percent (float->int (* (/ lru-hits-file lru-totals) 100)))
+;;       (set! lru-miss-percent (float->int (* (/ lru-misses-file lru-totals) 100)))
+;;       (displayln
+;;        " lru % used: "
+;;        (float->int (* (/ (lru-cache-size hc-lru) (any->int max-lru-size)) 100))
+;;        " lru misses: " lru-misses-file
+;;        " lru hits: " lru-hits-file
+;;        " hit %: " lru-hit-percent
+;;        " miss %: " lru-miss-percent))))
 
 (def (get-short str)
   (cond
@@ -305,15 +306,16 @@
   (dp (format "get-val: ~a string?:~a number?~a" hcn (string? hcn) (number? hcn)))
   (let* ((ret "N/A")
          (hcn-safe (format "~a" hcn))
-         (in-lru (lru-cache-get hc-lru hcn-safe)))
+         ;;(in-lru (lru-cache-get hc-lru hcn-safe))
+         )
     (cond
      ((table? hcn)
       (set! ret hcn))
      ((void? hcn)
       (set! ret 0))
-     ((lru-cache-get hc-lru hcn-safe)
-      (dp "in-lru")
-      (set! ret in-lru))
+     ;; ((lru-cache-get hc-lru hcn-safe)
+     ;;  (dp "in-lru")
+     ;;  (set! ret in-lru))
      ((and (string=? "0" hcn-safe))
       (dp "hcn is 0")
       (set! ret "0"))
@@ -321,71 +323,73 @@
       (let ((db-val (db-get hcn-safe)))
         (dp (format "db-val: ~a ~a" db-val hcn-safe) )
         (set! ret db-val)
-        (lru-cache-put! hc-lru hcn-safe db-val)
+        ;;(lru-cache-put! hc-lru hcn-safe db-val)
         ))
      (else
       (dp (format "get-val: unknown hcn pattern: ~a" hcn-safe))))
     ret))
 
-(def (miss-add val)
-  (if (hash-key? lru-miss-table val)
-    (hash-put! lru-miss-table val (+ 1 (hash-get lru-miss-table val)))
-    (hash-put! lru-miss-table val 1))
-  (set! lru-misses (+ lru-misses 1)))
+;; (def (miss-add val)
+;;   (if (hash-key? lru-miss-table val)
+;;     (hash-put! lru-miss-table val (+ 1 (hash-get lru-miss-table val)))
+;;     (hash-put! lru-miss-table val 1))
+;;   (set! lru-misses (+ lru-misses 1)))
+
+;; (def (add-val val)
+;;   "Convert an object to an index id.
+;;   If hash, return 0, as we can't handle those yet"
+;;   (cond
+;;    ((boolean? val)
+;;     0)
+;;    ((void? val)
+;;     0)
+;;    ((table? val)
+;;     (dp (format "Can't have table as key: ~a"  (hash->list val)))
+;;     0)
+;;    ((string? val)
+;;     (let ((hc-lru-entry (lru-cache-get hc-lru val))
+;; 	      (hcn 0))
+;;       (if hc-lru-entry
+;; 	    (begin ;; in cache
+;; 	      (set! lru-hits (+ lru-hits 1))
+;; 	      (set! hcn hc-lru-entry))
+;; 	    (begin ;; lru miss. if in db, fetch, push onto lru, if not, add to db, push to lru
+;; 	      (dp (format "add-val: ~a " val))
+;; 	      ;;(miss-add val)
+;; 	      ;;(displayln val)
+;; 	      (set! hcn (add-val-db-lru val))))
+;;       hcn))
+;;    (else
+;;     (dp (type-of val))
+;;     0)))
+
+;; (def (add-val-db-lru val)
+;;   (let ((seen (db-key? val))
+;;         (hcn 0))
+;;     (if seen
+;;       (set! hcn (db-get val))
+;;       (begin ;; not seen. need to bump HC and use new HC
+;;         (dp (format "db miss: ~a" val))
+;;         (inc-hc)
+;;         (set! hcn HC)
+;;         (db-batch val HC)
+;;         (db-batch (format "~a" HC) val)))
+;;     (lru-cache-put! hc-lru val hcn)
+;;     hcn))
 
 (def (add-val val)
-  "Convert an object to an index id.
-  If hash, return 0, as we can't handle those yet"
-  (cond
-   ((boolean? val)
-    0)
-   ((void? val)
-    0)
-   ((table? val)
-    (dp (format "Can't have table as key: ~a"  (hash->list val)))
-    0)
-   ((string? val)
-    (let ((hc-lru-entry (lru-cache-get hc-lru val))
-	      (hcn 0))
-      (if hc-lru-entry
-	    (begin ;; in cache
-	      (set! lru-hits (+ lru-hits 1))
-	      (set! hcn hc-lru-entry))
-	    (begin ;; lru miss. if in db, fetch, push onto lru, if not, add to db, push to lru
-	      (dp (format "add-val: ~a " val))
-	      (miss-add val)
-	      ;;(displayln val)
-	      (set! hcn (add-val-db-lru val))))
-      hcn))
-   (else
-    (dp (type-of val))
-    0)))
-
-(def (add-val-db-lru val)
-  (let ((seen (db-key? val))
-        (hcn 0))
-    (if seen
-      (set! hcn (db-get val))
-      (begin ;; not seen. need to bump HC and use new HC
-        (dp (format "db miss: ~a" val))
-        (inc-hc)
-        (set! hcn HC)
-        (db-batch val HC)
-        (db-batch (format "~a" HC) val)))
-    (lru-cache-put! hc-lru val hcn)
-    hcn))
-
-(def (add-val-db val)
-  (let ((seen (db-key? val))
-        (hcn 0))
-    (if seen
-      (set! hcn (db-get val))
-      (begin ;; not seen. need to bump HC and use new HC
-        (inc-hc)
-        (set! hcn HC)
-        (db-batch val HC)
-        ))
-    hcn))
+  (when (string? val)
+    (dp (format "add-val: ~a" val))
+    (let ((seen (db-key? val))
+          (hcn 0))
+      (if seen
+        (set! hcn (db-get val))
+        (begin
+          (inc-hc)
+          (set! hcn HC)
+          (db-batch val HC)
+          (db-batch (format "~a" HC) val)))
+        hcn)))
 
 (def (flush-all?)
   (dp (format "write-back-count && max-wb-size ~a ~a" write-back-count max-wb-size))
@@ -752,7 +756,7 @@
   (let-hash row
     (let*
         ((user (find-user .?userIdentity))
-         (req-id (number->string (add-val-db (or .?requestID .?eventID))))
+         (req-id (number->string (add-val (or .?requestID .?eventID))))
          (h (hash
              (aws-region (add-val .?awsRegion))
              (error-code (add-val .?errorCode))
@@ -833,15 +837,16 @@
   (dp ">-- db-open")
   (cond
    ((equal? db-type leveldb:)
-    (let ((db-dir (format "~a/kunabi-db/" (user-info-home (user-info (user-name))))))
+    (let ((db-dir "./kunabi")) ;;(format "~a/kunabi-db/" (user-info-home (user-info (user-name))))))
       (dp (format "db-dir is ~a" db-dir))
       (unless (file-exists? db-dir)
         (create-directory* db-dir))
       (let ((location (format "~a/records" db-dir)))
         (leveldb-open location (leveldb-options
+                                compression: #t
                                 block-size: (def-num (getenv "k_block_size" #f))
                                 write-buffer-size: (def-num (getenv "k_write_buffer_size" #f))
-                                lru-cache-capacity: (def-num (getenv "k_lru_cache_capacity" #f)))))))
+                                lru-cache-capacity: 100000)))))
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
