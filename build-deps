@@ -45,7 +45,6 @@
    std/actor
    std/db/dbi
    std/db/leveldb
-   std/db/lmdb
    std/db/postgresql
    std/db/postgresql-driver
    std/debug/heap
