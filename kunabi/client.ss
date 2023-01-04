@@ -241,171 +241,171 @@
       (mark-file-processed file)
       (displayln "rps: "
                  (float->int (/ count (- (time->seconds (current-time)) btime))) " size: " count)
-      (print-lru-stats lru-hits-begin lru-misses-begin))))
-)))
+      ;;(print-lru-stats lru-hits-begin lru-misses-begin))))
+      )))
 
 (def (number-only val)
-(cond
-((string? val)
-(number->string val))
-((number? val)
-val)))
+  (cond
+   ((string? val)
+    (number->string val))
+   ((number? val)
+    val)))
 
 (def (print-lru-stats begin-hits begin-misses)
-(let* ((lru-hits-file (- lru-hits begin-hits))
-(lru-misses-file (- lru-misses begin-misses))
-(lru-totals (+ lru-hits-file lru-misses-file))
-(lru-hit-percent 0)
-(lru-miss-percent 0))
-(when (> lru-totals 0)
-(set! lru-hit-percent (float->int (* (/ lru-hits-file lru-totals) 100)))
-(set! lru-miss-percent (float->int (* (/ lru-misses-file lru-totals) 100)))
-(displayln
- " lru % used: "
- (float->int (* (/ (lru-cache-size hc-lru) (any->int max-lru-size)) 100))
- " lru misses: " lru-misses-file
- " lru hits: " lru-hits-file
- " hit %: " lru-hit-percent
- " miss %: " lru-miss-percent))))
+  (let* ((lru-hits-file (- lru-hits begin-hits))
+         (lru-misses-file (- lru-misses begin-misses))
+         (lru-totals (+ lru-hits-file lru-misses-file))
+         (lru-hit-percent 0)
+         (lru-miss-percent 0))
+    (when (> lru-totals 0)
+      (set! lru-hit-percent (float->int (* (/ lru-hits-file lru-totals) 100)))
+      (set! lru-miss-percent (float->int (* (/ lru-misses-file lru-totals) 100)))
+      (displayln
+       " lru % used: "
+       (float->int (* (/ (lru-cache-size hc-lru) (any->int max-lru-size)) 100))
+       " lru misses: " lru-misses-file
+       " lru hits: " lru-hits-file
+       " hit %: " lru-hit-percent
+       " miss %: " lru-miss-percent))))
 
 (def (get-short str)
-(cond
-((string-rindex str #\_)
-=>
-(lambda (ix)
   (cond
-   ((string-index str #\. ix)
-	=>
-    (lambda (jx)
-	  (substring str (1+ ix) jx)))
-   (else #f))))
-(else str)))
+   ((string-rindex str #\_)
+    =>
+    (lambda (ix)
+      (cond
+       ((string-index str #\. ix)
+	    =>
+        (lambda (jx)
+	      (substring str (1+ ix) jx)))
+       (else #f))))
+   (else str)))
 
 (define 101-fields [
-'awsRegion
-'eventID
-'eventName
-'eventSource
-'eventTime
-'eventType
-'recipientAccountId
-'requestID
-'requestParameters
-'responseElements
-'sourceIPAddress
-'userAgent
-'userIdentity])
+                    'awsRegion
+                    'eventID
+                    'eventName
+                    'eventSource
+                    'eventTime
+                    'eventType
+                    'recipientAccountId
+                    'requestID
+                    'requestParameters
+                    'responseElements
+                    'sourceIPAddress
+                    'userAgent
+                    'userIdentity])
 
 
 (def (getf field row)
-(hash-get row field))
+  (hash-get row field))
 
 (def (get-val hcn)
-"Derefernce if a valid key in db. otherwise return"
-(dp (format "get-val: ~a string?:~a number?~a" hcn (string? hcn) (number? hcn)))
-(let* ((ret "N/A")
-(hcn-safe (format "~a" hcn))
-(in-lru (lru-cache-get hc-lru hcn-safe)))
-(cond
-((table? hcn)
- (set! ret hcn))
-((void? hcn)
- (set! ret 0))
-((lru-cache-get hc-lru hcn-safe)
- (dp "in-lru")
- (set! ret in-lru))
-((and (string=? "0" hcn-safe))
- (dp "hcn is 0")
- (set! ret "0"))
-((db-key? hcn-safe)
- (let ((db-val (db-get hcn-safe)))
-   (dp (format "db-val: ~a ~a" db-val hcn-safe) )
-   (set! ret db-val)
-   (lru-cache-put! hc-lru hcn-safe db-val)
-   ))
-(else
- (dp (format "get-val: unknown hcn pattern: ~a" hcn-safe))))
-ret))
+  "Derefernce if a valid key in db. otherwise return"
+  (dp (format "get-val: ~a string?:~a number?~a" hcn (string? hcn) (number? hcn)))
+  (let* ((ret "N/A")
+         (hcn-safe (format "~a" hcn))
+         (in-lru (lru-cache-get hc-lru hcn-safe)))
+    (cond
+     ((table? hcn)
+      (set! ret hcn))
+     ((void? hcn)
+      (set! ret 0))
+     ((lru-cache-get hc-lru hcn-safe)
+      (dp "in-lru")
+      (set! ret in-lru))
+     ((and (string=? "0" hcn-safe))
+      (dp "hcn is 0")
+      (set! ret "0"))
+     ((db-key? hcn-safe)
+      (let ((db-val (db-get hcn-safe)))
+        (dp (format "db-val: ~a ~a" db-val hcn-safe) )
+        (set! ret db-val)
+        (lru-cache-put! hc-lru hcn-safe db-val)
+        ))
+     (else
+      (dp (format "get-val: unknown hcn pattern: ~a" hcn-safe))))
+    ret))
 
 (def (miss-add val)
-(if (hash-key? lru-miss-table val)
-(hash-put! lru-miss-table val (+ 1 (hash-get lru-miss-table val)))
-(hash-put! lru-miss-table val 1))
-(set! lru-misses (+ lru-misses 1)))
+  (if (hash-key? lru-miss-table val)
+    (hash-put! lru-miss-table val (+ 1 (hash-get lru-miss-table val)))
+    (hash-put! lru-miss-table val 1))
+  (set! lru-misses (+ lru-misses 1)))
 
 (def (add-val val)
-"Convert an object to an index id.
+  "Convert an object to an index id.
   If hash, return 0, as we can't handle those yet"
-(cond
-((boolean? val)
-0)
-((void? val)
-0)
-((table? val)
-(dp (format "Can't have table as key: ~a"  (hash->list val)))
-0)
-((string? val)
-(let ((hc-lru-entry (lru-cache-get hc-lru val))
-	  (hcn 0))
-  (if hc-lru-entry
-	(begin ;; in cache
-	  (set! lru-hits (+ lru-hits 1))
-	  (set! hcn hc-lru-entry))
-	(begin ;; lru miss. if in db, fetch, push onto lru, if not, add to db, push to lru
-	  (dp (format "add-val: ~a " val))
-	  (miss-add val)
-	  ;;(displayln val)
-	  (set! hcn (add-val-db-lru val))))
-  hcn))
-(else
-(dp (type-of val))
-0)))
+  (cond
+   ((boolean? val)
+    0)
+   ((void? val)
+    0)
+   ((table? val)
+    (dp (format "Can't have table as key: ~a"  (hash->list val)))
+    0)
+   ((string? val)
+    (let ((hc-lru-entry (lru-cache-get hc-lru val))
+	      (hcn 0))
+      (if hc-lru-entry
+	    (begin ;; in cache
+	      (set! lru-hits (+ lru-hits 1))
+	      (set! hcn hc-lru-entry))
+	    (begin ;; lru miss. if in db, fetch, push onto lru, if not, add to db, push to lru
+	      (dp (format "add-val: ~a " val))
+	      (miss-add val)
+	      ;;(displayln val)
+	      (set! hcn (add-val-db-lru val))))
+      hcn))
+   (else
+    (dp (type-of val))
+    0)))
 
 (def (add-val-db-lru val)
-(let ((seen (db-key? val))
-(hcn 0))
-(if seen
-(set! hcn (db-get val))
-(begin ;; not seen. need to bump HC and use new HC
-  (dp (format "db miss: ~a" val))
-  (inc-hc)
-  (set! hcn HC)
-  (db-batch val HC)
-  (db-batch (format "~a" HC) val)))
-(lru-cache-put! hc-lru val hcn)
-hcn))
+  (let ((seen (db-key? val))
+        (hcn 0))
+    (if seen
+      (set! hcn (db-get val))
+      (begin ;; not seen. need to bump HC and use new HC
+        (dp (format "db miss: ~a" val))
+        (inc-hc)
+        (set! hcn HC)
+        (db-batch val HC)
+        (db-batch (format "~a" HC) val)))
+    (lru-cache-put! hc-lru val hcn)
+    hcn))
 
 (def (add-val-db val)
-(let ((seen (db-key? val))
-(hcn 0))
-(if seen
-(set! hcn (db-get val))
-(begin ;; not seen. need to bump HC and use new HC
-  (inc-hc)
-  (set! hcn HC)
-  (db-batch val HC)
-  ))
-hcn))
+  (let ((seen (db-key? val))
+        (hcn 0))
+    (if seen
+      (set! hcn (db-get val))
+      (begin ;; not seen. need to bump HC and use new HC
+        (inc-hc)
+        (set! hcn HC)
+        (db-batch val HC)
+        ))
+    hcn))
 
 (def (flush-all?)
-(dp (format "write-back-count && max-wb-size ~a ~a" write-back-count max-wb-size))
-(if (> write-back-count max-wb-size)
-(begin
-(displayln "writing.... " write-back-count)
-;;(type-of (car (##process-statistics)))
-(flush-indices-hash)
-(db-write)
-(set! write-back-count 0))))
+  (dp (format "write-back-count && max-wb-size ~a ~a" write-back-count max-wb-size))
+  (if (> write-back-count max-wb-size)
+    (begin
+      (displayln "writing.... " write-back-count)
+      ;;(type-of (car (##process-statistics)))
+      (flush-indices-hash)
+      (db-write)
+      (set! write-back-count 0))))
 
 (def (get-last-key)
-"Get the last key for use in compaction"
-(let ((itor (leveldb-iterator db)))
-(leveldb-iterator-seek-last itor)
-(let lp ()
-  (leveldb-iterator-prev itor)
-  (if (leveldb-iterator-valid? itor)
-    (bytes->string (leveldb-iterator-key itor))
-    (lp)))))
+  "Get the last key for use in compaction"
+  (let ((itor (leveldb-iterator db)))
+    (leveldb-iterator-seek-last itor)
+    (let lp ()
+      (leveldb-iterator-prev itor)
+      (if (leveldb-iterator-valid? itor)
+        (bytes->string (leveldb-iterator-key itor))
+        (lp)))))
 
 (def (get-first-key)
   "Get the last key for use in compaction"
