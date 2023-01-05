@@ -146,7 +146,7 @@
     (for (file ct-files)
       (read-ct-file file)
       (set! count (+ 1 count))
-      ;;(flush-all?)
+      (flush-all?)
       (set! count 0))
     (flush-indices-hash)
     (db-write)
@@ -305,15 +305,15 @@
           (db-put (format "~a" HC) val)))
         hcn)))
 
-;; (def (flush-all?)
-;;   (dp (format "write-back-count && max-wb-size ~a ~a" write-back-count max-wb-size))
-;;   (if (> write-back-count max-wb-size)
-;;     (begin
-;;       (displayln "writing.... " write-back-count)
-;;       ;;(type-of (car (##process-statistics)))
-;;       (flush-indices-hash)
-;;       ;;(db-write)
-;;       (set! write-back-count 0))))
+(def (flush-all?)
+  (dp (format "write-back-count && max-wb-size ~a ~a" write-back-count max-wb-size))
+  (if (> write-back-count max-wb-size)
+    (begin
+      (displayln "writing.... " write-back-count)
+      ;;(type-of (car (##process-statistics)))
+      (flush-indices-hash)
+      ;;(db-write)
+      (set! write-back-count 0))))
 
 (def (get-last-key)
   "Get the last key for use in compaction"
