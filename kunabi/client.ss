@@ -737,7 +737,7 @@
   (dp ">-- db-open")
   (cond
    ((equal? db-type leveldb:)
-    (let ((db-dir "./kunabi")) ;;(format "~a/kunabi-db/" (user-info-home (user-info (user-name))))))
+    (let ((db-dir (format "~a/kunabi-db/" (user-info-home (user-info (user-name))))))
       (dp (format "db-dir is ~a" db-dir))
       (unless (file-exists? db-dir)
         (create-directory* db-dir))
