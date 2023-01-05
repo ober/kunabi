@@ -146,7 +146,7 @@
     (for (file ct-files)
       (read-ct-file file)
       (set! count (+ 1 count))
-      (flush-all?)
+      ;;(flush-all?)
       (set! count 0))
     (flush-indices-hash)
     (db-write)
@@ -305,15 +305,15 @@
           (db-put (format "~a" HC) val)))
         hcn)))
 
-(def (flush-all?)
-  (dp (format "write-back-count && max-wb-size ~a ~a" write-back-count max-wb-size))
-  (if (> write-back-count max-wb-size)
-    (begin
-      (displayln "writing.... " write-back-count)
-      ;;(type-of (car (##process-statistics)))
-      (flush-indices-hash)
-      ;;(db-write)
-      (set! write-back-count 0))))
+;; (def (flush-all?)
+;;   (dp (format "write-back-count && max-wb-size ~a ~a" write-back-count max-wb-size))
+;;   (if (> write-back-count max-wb-size)
+;;     (begin
+;;       (displayln "writing.... " write-back-count)
+;;       ;;(type-of (car (##process-statistics)))
+;;       (flush-indices-hash)
+;;       ;;(db-write)
+;;       (set! write-back-count 0))))
 
 (def (get-last-key)
   "Get the last key for use in compaction"
@@ -416,13 +416,24 @@
 
 (def (resolve-records ids)
   (when (list? ids)
-    (displayln "| date                 | name      | user   |  source | hostname| type| request| user-agent| error-code | error-messages |")
-    (displayln "|----------------------+-----------+-------------------+--------------+------------+--------------------+----------------------+------------+---------------|")
+    (let ((outs [[ "Date" "Name" "User" "Source" "Hostname" "Type" "Request" "User Agent" "Error Code" "Error Message" ]]))
     (for (id ids)
       (let ((id2 (get-val id)))
-        ;;	    (displayln "resolve-records: id: " id " id2: " (hash->list id2))
-        (if (table? id2)
-          (print-record id2))))))
+        (when (table? id2)
+          (let-hash id2
+            (set! outs (cons [
+                              .?event-time
+		                      (get-val-t .?event-name)
+		                      (get-val-t .?user)
+		                      (get-val-t .?event-source)
+		                      (get-val-t .?source-ip-address)
+		                      (get-val-t .?event-type)
+		                      (get-val-t .?request-parameters)
+		                      (get-val-t .?user-agent)
+		                      (get-val-t .?error-code)
+		                      (get-val-t .?error-message)
+                              ] outs))))))
+    (style-output outs "org-mode"))))
 
 (def (get-host-name ip)
   (if (pregexp-match "^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}" ip)
@@ -432,31 +443,6 @@
 	      lookup-name)))
     ip))
 
-(def (print-record row)
-  (if (table? row)
-    (let-hash row
-      (displayln "|"
-		         .event-time
-		         "|"
-		         (get-val-t .?event-name)
-		         "|"
-		         (get-val-t .?user)
-		         "|"
-		         (get-val-t .?event-source)
-		         "|"
-		         (get-val-t .?source-ip-address)
-		         "|"
-		         (get-val-t .?event-type)
-		         "|"
-		         (get-val-t .?request-parameters)
-		         "|"
-		         (get-val-t .?user-agent)
-		         "|"
-		         (get-val-t .?error-code)
-		         "|"
-		         (get-val-t .?error-message)
-		         "|"
-		         ))))
 
 (def (search-event look-for)
   (dp (format "look-for: ~a" look-for))
