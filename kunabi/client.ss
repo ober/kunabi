@@ -51,7 +51,7 @@
 
 (def HC 0)
 (def write-back-count 0)
-(def max-wb-size 100000)
+(def max-wb-size (def-num (getenv "k_max_wb" 10000)))
 (def indices-hash (make-hash-table))
 
 (def (load-config)
@@ -185,7 +185,7 @@
   (let ((current (make-hash-table)))
     (hash-put! current entry #t)
     (hash-put! indices-hash index current)
-    (db-batch (format "I-~a" index) current)))
+    (db-put (format "I-~a" index) current)))
 
 (def (update-db-index index entry)
   "Fetch the index from db, then add our new entry, and save."
@@ -301,8 +301,8 @@
         (begin
           (inc-hc)
           (set! hcn HC)
-          (db-batch val HC)
-          (db-batch (format "~a" HC) val)))
+          (db-put val HC)
+          (db-put (format "~a" HC) val)))
         hcn)))
 
 (def (flush-all?)
@@ -312,7 +312,7 @@
       (displayln "writing.... " write-back-count)
       ;;(type-of (car (##process-statistics)))
       (flush-indices-hash)
-      (db-write)
+      ;;(db-write)
       (set! write-back-count 0))))
 
 (def (get-last-key)
@@ -393,13 +393,13 @@
   (let ((indices (make-hash-table)))
     (for (index (hash-keys indices-hash))
       (dp (format "fih: index: ~a" index))
-      (db-batch (format "I-~a" index) (hash-get indices-hash index))
+      (db-put (format "I-~a" index) (hash-get indices-hash index))
       (hash-put! indices index #t))
     (db-put "INDICES" indices)))
 
 (def (flush-vpc-totals)
   (for (cid (hash-keys vpc-totals))
-    (db-batch (format "~a" cid) (hash-get vpc-totals cid))))
+    (db-put (format "~a" cid) (hash-get vpc-totals cid))))
 
 (def (list-index-entries idx)
   (if (db-key? idx)
@@ -691,7 +691,7 @@
       (dp (hash->list h))
       (set! write-back-count (+ write-back-count 1))
       (dp (format "process-row: doing db-batch on req-id: ~a on hash ~a" req-id (hash->list h)))
-      (db-batch req-id h)
+      (db-put req-id h)
       (dp (format "------------- end of batch of req-id on hash ----------"))
       (when (string? .?errorCode)
         (add-to-index "errors" .?errorCode)
@@ -757,9 +757,11 @@
         (create-directory* db-dir))
       (let ((location (format "~a/records" db-dir)))
         (leveldb-open location (leveldb-options
+                                paranoid-checks: #t
+                                bloom-filter-bits: (def-num (getenv "k_bloom_bits" #f))
                                 compression: #t
                                 block-size: (def-num (getenv "k_block_size" #f))
-                                write-buffer-size: (def-num (getenv "k_write_buffer_size" #f))
+                                write-buffer-size: (def-num (getenv "k_write_size" #f))
                                 lru-cache-capacity: (def-num (getenv "k_lru_cache" 10000)))))))
    (else
     (displayln "Unknown db-type: " db-type)
