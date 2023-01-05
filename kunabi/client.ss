@@ -744,6 +744,7 @@
       (let ((location (format "~a/records" db-dir)))
         (leveldb-open location (leveldb-options
                                 paranoid-checks: #t
+                                max-open-files: (def-num (getenv "k_max_files" #f))
                                 bloom-filter-bits: (def-num (getenv "k_bloom_bits" #f))
                                 compression: #t
                                 block-size: (def-num (getenv "k_block_size" #f))
