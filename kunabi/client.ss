@@ -51,7 +51,7 @@
 
 (def HC 0)
 (def write-back-count 0)
-(def max-wb-size (def-num (getenv "k_max_wb" 10000)))
+(def max-wb-size (def-num (getenv "k_max_wb" 100000)))
 (def indices-hash (make-hash-table))
 
 (def (load-config)
@@ -130,18 +130,18 @@
   ;;(spawn watch-heap!)
   (load-indices-hash)
   (let* ((files 0)
-	     (rows 0)
+	       (rows 0)
          (count 0)
          (mod 1)
-	     (etime 0)
-	     (btime (time->seconds (current-time)))
-	     (total-count 0)
-	     (ct-files
-	      (find-files dir
-		              (lambda (filename)
-			            (and (equal? (path-extension filename) ".gz")
-			                 (not (equal? (path-strip-directory filename) ".gz"))))))
-	     (file-count (length ct-files)))
+	       (etime 0)
+	       (btime (time->seconds (current-time)))
+	       (total-count 0)
+	       (ct-files
+	        (find-files dir
+		                  (lambda (filename)
+			                  (and (equal? (path-extension filename) ".gz")
+			                       (not (equal? (path-strip-directory filename) ".gz"))))))
+	       (file-count (length ct-files)))
 
     (for (file ct-files)
       (read-ct-file file)
@@ -165,13 +165,13 @@
     (if index-in-global-hash?
       (new-index-entry index entry)
       (begin
-	    (dp (format "ati: index not in global hash for ~a. adding" index))
-	    (hash-put! indices-hash index (hash))
-	    (let ((have-db-entry-for-index (db-key? (format "I-~a" index))))
-	      (dp (format "have-db-entry-for-index: ~a key: I-~a" have-db-entry-for-index index))
-	      (if have-db-entry-for-index
-	        (update-db-index index entry)
-	        (new-db-index index entry)))))))
+	      (dp (format "ati: index not in global hash for ~a. adding" index))
+	      (hash-put! indices-hash index (hash))
+	      (let ((have-db-entry-for-index (db-key? (format "I-~a" index))))
+	        (dp (format "have-db-entry-for-index: ~a key: I-~a" have-db-entry-for-index index))
+	        (if have-db-entry-for-index
+	          (update-db-index index entry)
+	          (new-db-index index entry)))))))
 
 (def (new-index-entry index entry)
   "Add entry to index in global hash"
@@ -207,24 +207,24 @@
   (dp (format "read-ct-file: ~a" file))
   (unless (file-already-processed? file)
     (let ((btime (time->seconds (current-time)))
-	      (count 0)
-	      (pool []))
+	        (count 0)
+	        (pool []))
       (dp (memory-usage))
       (call-with-input-file file
-	    (lambda (file-input)
-	      (let ((mytables (hash-ref
-			               (read-json
-			                (open-input-string
-			                 (bytes->string
-			                  (uncompress file-input))))
-			               'Records)))
-	        (for-each
-	          (lambda (row)
-		        (set! count (+ count 1))
+	      (lambda (file-input)
+	        (let ((mytables (hash-ref
+			                     (read-json
+			                      (open-input-string
+			                       (bytes->string
+			                        (uncompress file-input))))
+			                     'Records)))
+	          (for-each
+	            (lambda (row)
+		            (set! count (+ count 1))
                 (dp (format "row-> ~a" (hash->list row)))
                 (process-row row))
-	          mytables)
-	        )))
+	            mytables)
+	          )))
       (mark-file-processed file)
       (displayln "rps: "
                  (float->int (/ count (- (time->seconds (current-time)) btime))) " size: " count)
@@ -244,9 +244,9 @@
     (lambda (ix)
       (cond
        ((string-index str #\. ix)
-	    =>
+	      =>
         (lambda (jx)
-	      (substring str (1+ ix) jx)))
+	        (substring str (1+ ix) jx)))
        (else #f))))
    (else str)))
 
@@ -292,6 +292,8 @@
     ret))
 
 (def (add-val val)
+  (unless (string? val)
+    val)
   (when (string? val)
     (dp (format "add-val: ~a" val))
     (let ((seen (db-key? val))
@@ -303,7 +305,7 @@
           (set! hcn HC)
           (db-put val HC)
           (db-put (format "~a" HC) val)))
-        hcn)))
+      hcn)))
 
 (def (flush-all?)
   (dp (format "write-back-count && max-wb-size ~a ~a" write-back-count max-wb-size))
@@ -365,8 +367,8 @@
     (hash-for-each
      (lambda (k v)
        (let ((count (hash-length v)))
-	     (displayln k ":" count " v: " v " first:" (hash-keys v))
-	     (set! total (+ total count))))
+	       (displayln k ":" count " v: " v " first:" (hash-keys v))
+	       (set! total (+ total count))))
      indices-hash)
     (displayln "indicies count total: " total)))
 
@@ -377,16 +379,16 @@
     (let ((has-key (db-key? "INDICES")))
       (displayln ">>--- Have INDICES " has-key)
       (if has-key
-	    (begin ;; load it up.
-	      (dp (format "load-indices-hash records has no INDICES entry"))
-	      (let ((indices2 (db-get "INDICES")))
+	      (begin ;; load it up.
+	        (dp (format "load-indices-hash records has no INDICES entry"))
+	        (let ((indices2 (db-get "INDICES")))
             (dp (hash->list indices2))
-	        (for-each
-	          (lambda (index)
+	          (for-each
+	            (lambda (index)
                 (displayln (format "index: ~a" index))
-		        (let ((index-int (db-get index)))
-		          (hash-put! indices-hash index index-int)))
-	          indices2)))))
+		            (let ((index-int (db-get index)))
+		              (hash-put! indices-hash index index-int)))
+	            indices2)))))
     (displayln "No INDICES entry. skipping hash loading")))
 
 (def (flush-indices-hash)
@@ -405,73 +407,71 @@
   (if (db-key? idx)
     (let ((entries (hash-keys (db-get idx))))
       (if (list? entries)
-	    (for-each
-	      (lambda (x)
-	        (displayln x))
-	      (sort! entries eq?))
-	    (begin
-	      (displayln "did not get list back from entries")
-	      (type-of entries))))
+	      (for-each
+	        (lambda (x)
+	          (displayln x))
+	        (sort! entries eq?))
+	      (begin
+	        (displayln "did not get list back from entries")
+	        (type-of entries))))
     (displayln "no idx found for " idx)))
 
 (def (resolve-records ids)
   (when (list? ids)
     (let ((outs [[ "Date" "Name" "User" "Source" "Hostname" "Type" "Request" "User Agent" "Error Code" "Error Message" ]]))
-    (for (id ids)
-      (let ((id2 (get-val id)))
-        (when (table? id2)
-          (let-hash id2
-            (set! outs (cons [
-                              .?event-time
-		                      (get-val-t .?event-name)
-		                      (get-val-t .?user)
-		                      (get-val-t .?event-source)
-		                      (get-val-t .?source-ip-address)
-		                      (get-val-t .?event-type)
-		                      (get-val-t .?request-parameters)
-		                      (get-val-t .?user-agent)
-		                      (get-val-t .?error-code)
-		                      (get-val-t .?error-message)
-                              ] outs))))))
-    (style-output outs "org-mode"))))
+      (for (id ids)
+        (let ((id2 (get-val id)))
+          (when (table? id2)
+            (let-hash id2
+              (set! outs (cons [
+                                .?event-time
+		                            (get-val-t .?event-name)
+		                            (get-val-t .?user)
+		                            (get-val-t .?event-source)
+		                            (get-val-t .?source-ip-address)
+		                            (get-val-t .?event-type)
+		                            (get-val-t .?request-parameters)
+		                            (get-val-t .?user-agent)
+		                            (get-val-t .?error-code)
+		                            (get-val-t .?error-message)
+                                ] outs))))))
+      (style-output outs "org-mode"))))
 
 (def (get-host-name ip)
   (if (pregexp-match "^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}" ip)
     (let ((lookup (host-info ip)))
       (if (host-info? lookup)
-	    (let ((lookup-name (host-info-name lookup)))
-	      lookup-name)))
+	      (let ((lookup-name (host-info-name lookup)))
+	        lookup-name)))
     ip))
-
 
 (def (search-event look-for)
   (dp (format "look-for: ~a" look-for))
   (let ((index-name (format "I-~a" look-for)))
     (if (db-key? index-name)
       (let ((matches (hash-keys (db-get index-name))))
-	    ;;	(displayln matches)
-	    (resolve-records matches))
+	      (resolve-records matches))
       (displayln "Could not find entry in indices-db for " look-for))))
 
 (def (process-vpc-row row)
   (with ([ date
-	       version
-	       account_id
-	       interface-id
-	       srcaddr
-	       dstaddr
-	       srcport
-	       dstport
-	       protocol
-	       packets
-	       bytez
-	       start
-	       end
-	       action
-	       status
-	       ] (string-split row #\space))
+	         version
+	         account_id
+	         interface-id
+	         srcaddr
+	         dstaddr
+	         srcport
+	         dstport
+	         protocol
+	         packets
+	         bytez
+	         start
+	         end
+	         action
+	         status
+	         ] (string-split row #\space))
     (let* ((convo (format "C-~a-~a-~a-~a-~a" srcaddr srcport dstaddr dstport protocol))
-	       (cid (memo-cid convo)))
+	         (cid (memo-cid convo)))
       (add-bytez cid bytez))))
 
 (def (add-bytez cid bytez)
@@ -482,9 +482,9 @@
 
 (def (read-vpc-file file)
   (let ((count 0)
-	    (bundle 100000)
-	    (btime 0)
-	    (etime 0))
+	      (bundle 100000)
+	      (btime 0)
+	      (etime 0))
     (unless (file-already-processed? file)
       (call-with-input-file file
         (lambda (file-input)
@@ -502,9 +502,9 @@
 
 (def (load-vpc dir)
   (let ((rows 0)
-	    (btime 0)
-	    (total-count 0)
-	    (etime 0)
+	      (btime 0)
+	      (total-count 0)
+	      (etime 0)
         (files (find-files dir
                            (lambda (filename)
                              (and (equal? (path-extension filename) ".gz")
@@ -571,7 +571,7 @@
              ((string=? "IAMUser" type)
               (set! username .userName))
              ((string=? "AWSAccount" type)
-              (set! username (format "~a-~a" .?accountId .?principalId)))
+              (set! username (format "~a" .?principalId)))
              ((string=? "AssumedRole" type)
               (if (hash-key? ui 'sessionContext)
                 (when (table? .?sessionContext)
@@ -737,7 +737,7 @@
   (dp ">-- db-open")
   (cond
    ((equal? db-type leveldb:)
-    (let ((db-dir (format "~a/kunabi-db/" (user-info-home (user-info (user-name))))))
+    (let ((db-dir "./kunabi")) ;; (format "~a/kunabi-db/" (user-info-home (user-info (user-name))))))
       (dp (format "db-dir is ~a" db-dir))
       (unless (file-exists? db-dir)
         (create-directory* db-dir))
@@ -748,7 +748,7 @@
                                 bloom-filter-bits: (def-num (getenv "k_bloom_bits" #f))
                                 compression: #t
                                 block-size: (def-num (getenv "k_block_size" #f))
-                                write-buffer-size: (def-num (getenv "k_write_size" #f))
+                                write-buffer-size: (def-num (getenv "k_write_buffer" (* 1024 1024 16)))
                                 lru-cache-capacity: (def-num (getenv "k_lru_cache" 10000)))))))
    (else
     (displayln "Unknown db-type: " db-type)
@@ -870,13 +870,13 @@
   (let ((cid 0))
     (if (hash-key? hc-hash convo)
       (begin ;; we are a cache hit
-	    (set! cid (hash-get hc-hash convo)))
+	      (set! cid (hash-get hc-hash convo)))
       (begin ;; no hash entry
-	    (inc-hc)
-	    (db-batch convo HC)
-	    (db-batch (format "~a" HC) convo)
-	    ;;(displayln "HC is " HC)
-	    (set! cid HC)
-	    (hash-put! hc-hash convo cid)
-	    (hash-put! hc-hash cid convo)))
+	      (inc-hc)
+	      (db-batch convo HC)
+	      (db-batch (format "~a" HC) convo)
+	      ;;(displayln "HC is " HC)
+	      (set! cid HC)
+	      (hash-put! hc-hash convo cid)
+	      (hash-put! hc-hash cid convo)))
     cid))
