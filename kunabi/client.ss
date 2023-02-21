@@ -30,7 +30,7 @@
   :ober/oberlib)
 
 (declare (not optimize-dead-definitions))
-(def version "0.05")
+(def version "0.06")
 
 (export #t)
 
@@ -144,7 +144,9 @@
 	       (file-count (length ct-files)))
 
     (for (file ct-files)
+      ;;(spawn (lambda ()
       (read-ct-file file)
+      ;;))
       (set! count (+ 1 count))
       (flush-all?)
       (set! count 0))
@@ -226,16 +228,15 @@
 	            mytables)
 	          )))
       (mark-file-processed file)
-      (displayln "rps: "
-                 (float->int (/ count (- (time->seconds (current-time)) btime))) " size: " count)
+      (let ((delta (- (time->seconds (current-time)) btime)))
+        (displayln "rps: "
+                   (float->int (/ count delta )) " size: " count " delta: " delta))
       )))
 
-(def (number-only val)
-  (cond
-   ((string? val)
-    (number->string val))
-   ((number? val)
-    val)))
+(def (number-only obj)
+  (if (number? obj)
+    obj
+    (string->number obj)))
 
 (def (get-short str)
   (cond
@@ -265,12 +266,11 @@
                     'userAgent
                     'userIdentity])
 
-
 (def (getf field row)
   (hash-get row field))
 
 (def (get-val hcn)
-  "Derefernce if a valid key in db. otherwise return"
+  "Dereference if a valid key in db. otherwise return"
   (dp (format "get-val: ~a string?:~a number?~a" hcn (string? hcn) (number? hcn)))
   (let* ((ret "N/A")
          (hcn-safe (format "~a" hcn)))
