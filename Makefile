@@ -1,6 +1,6 @@
 PROJECT := kunabi
 
-DOCKER_IMAGE := "gerbil/alpine"
+DOCKER_IMAGE := "gerbil/alpine:amd64"
 
 $(eval uid := $(shell id -u))
 $(eval gid := $(shell id -g))
@@ -26,7 +26,7 @@ linux-static-docker:
 linux-static: build
 	/usr/bin/time -avp $(GERBIL_HOME)/bin/gxc -o $(PROJECT)-bin -static \
 	-cc-options "-Bstatic" \
-	-ld-options "-static -lpthread -L/usr/lib/x86_64-linux-gnu -lleveldb -lssl -ldl -lyaml -lz " \
+	-ld-options "-static -lpthread -L/usr/lib/x86_64-linux-gnu -lleveldb -lssl -ldl -lyaml -lz -lstdc++" \
 	-exe $(PROJECT)/$(PROJECT).ss
 
 clean:
