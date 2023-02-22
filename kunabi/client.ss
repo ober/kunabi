@@ -104,7 +104,7 @@
              " errors: " (count-index "I-errors")
              " regions: " (count-index "I-aws-region")
              " events: " (count-index "I-events")
-             " files: " (count-all "F*")
+             " files: " (countdb "F*")
              ))
 
 (def (read file)
