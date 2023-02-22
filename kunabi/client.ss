@@ -104,7 +104,7 @@
              " errors: " (count-index "I-errors")
              " regions: " (count-index "I-aws-region")
              " events: " (count-index "I-events")
-             " files: " (countdb)
+             " files: " (count-by-key "^F*")
              ))
 
 (def (read file)
@@ -793,8 +793,6 @@
 (def (db-key? key)
   (dp (format ">-- db-key? with ~a" key))
   (cond
-   ;; ((equal? db-type lmdb:)
-   ;;  (or (get-lmdb key) #f))
    ((equal? db-type leveldb:)
     (leveldb-key? db (format "~a" key)))
    (else
@@ -804,8 +802,6 @@
 (def (db-write)
   (dp "in db-write")
   (cond
-   ;; ((equal? db-type lmdb:)
-   ;;  (displayln "db-write wb lmdb: noop"))
    ((equal? db-type leveldb:)
     (leveldb-write db wb))
    (else
@@ -867,6 +863,19 @@
     (displayln "First: " first " Last: " last)
     (leveldb-compact-range db first last)))
 
+(def (count-by-key key)
+  "Get a count of how many records are in db"
+  (let ((itor (leveldb-iterator db)))
+    (leveldb-iterator-seek-first itor)
+    (let lp ((count 1))
+      (leveldb-iterator-next itor)
+      (if (leveldb-iterator-valid? itor)
+        (begin
+          (if (pregexp-match key (bytes->string (leveldb-iterator-key itor)))
+            (lp (1+ count))
+            (lp count)))
+        count))))
+
 (def (countdb)
   "Get a count of how many records are in db"
   (let ((itor (leveldb-iterator db)))
@@ -876,6 +885,7 @@
       (if (leveldb-iterator-valid? itor)
         (lp (1+ count))
         count))))
+
 ;;(displayln "total: " count)))))
 
 (def (repairdb)
