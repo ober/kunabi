@@ -99,10 +99,12 @@
 
 (def (st)
   (displayln "Totals: "
+             " records: " (countdb)
              " users: " (count-index "I-users")
              " errors: " (count-index "I-errors")
              " regions: " (count-index "I-aws-region")
              " events: " (count-index "I-events")
+             " files: " (count-all "F*")
              ))
 
 (def (read file)
@@ -873,7 +875,8 @@
       (leveldb-iterator-next itor)
       (if (leveldb-iterator-valid? itor)
         (lp (1+ count))
-        (displayln "total: " count)))))
+        count))))
+        ;;(displayln "total: " count)))))
 
 (def (repairdb)
   "Repair the db"
