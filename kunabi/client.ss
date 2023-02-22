@@ -99,10 +99,10 @@
 
 (def (st)
   (displayln "Totals: "
-             " users: " (length (list-index-entries "I-users"))
-             " errors: " (length (list-index-entries "I-errors"))
-             " regions: " (length (list-index-entries "I-aws-region"))
-             " events: " (length (list-index-entries "I-events"))
+             " users: " (count-index "I-users")
+             " errors: " (count-index "I-errors")
+             " regions: " (count-index "I-aws-region")
+             " events: " (count-index "I-events")
              ))
 
 (def (read file)
@@ -410,6 +410,12 @@
 (def (flush-vpc-totals)
   (for (cid (hash-keys vpc-totals))
     (db-put (format "~a" cid) (hash-get vpc-totals cid))))
+
+(def (count-index idx)
+  (if (db-key? idx)
+    (let* ((entries (hash-keys (db-get idx)))
+           (count (length entries)))
+      count)))
 
 (def (list-index-entries idx)
   (if (db-key? idx)
