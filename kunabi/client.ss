@@ -97,6 +97,14 @@
 (def (lec)
   (list-index-entries "I-errors"))
 
+(def (st)
+  (displayln "Totals: "
+             " users: " (length (list-index-entries "I-users"))
+             " errors: " (length (list-index-entries "I-errors"))
+             " regions: " (length (list-index-entries "I-aws-region"))
+             " events: " (length (list-index-entries "I-events"))
+             ))
+
 (def (read file)
   (read-ct-file file))
 

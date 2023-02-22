@@ -57,6 +57,7 @@
    ("sip" (hash (description: "sip <ip address> => list all records from ip address") (usage: "sip <ip address>") (count: 1)))
    ("sn" (hash (description: "sn <user name> => list all records for user name") (usage: "sn <username>") (count: 1)))
    ("sr" (hash (description: "sr <Region name> => list all records for region name") (usage: "sr <region name>") (count: 1)))
+   ("st" (hash (description: "st: Status") (usage: "sr") (count: 0)))
    ("repairdb" (hash (description: "repairdb") (usage: "repairdb") (count: 0)))
    ("report" (hash (description: "report") (usage: "report") (count: 0)))
    ))

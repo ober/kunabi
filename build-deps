@@ -9,7 +9,6 @@
    std/actor
    std/db/dbi
    std/db/leveldb
-   std/db/lmdb
    std/db/postgresql
    std/db/postgresql-driver
    std/debug/heap
@@ -19,7 +18,6 @@
    std/iter
    std/logger
    std/misc/list
-   std/misc/lru
    std/net/address
    std/net/httpd
    std/pregexp
@@ -30,12 +28,12 @@
    std/text/yaml
    std/text/zlib))
  (ober/kunabi/kunabi
-  (static-exe:
+  (exe:
    "kunabi/kunabi"
    "-ld-options"
-   "-lyaml -lssl -lz -L/usr/local/opt/openssl/lib/ -L/usr/local/lib"
-   "-cc-options"
-   "-I/usr/local/opt/openssl/include -I/usr/local/include")
+   "-lpthread -lleveldb -lyaml -ldl -lssl -lz -L/usr/lib64 -L/usr/pkg/lib -I/usr/pkg/include"
+   "-prelude"
+   "(declare (not safe))")
   (gerbil/core
    gerbil/gambit
    gerbil/gambit/os
