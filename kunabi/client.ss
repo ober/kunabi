@@ -104,7 +104,7 @@
              " errors: " (count-index "I-errors")
              " regions: " (count-index "I-aws-region")
              " events: " (count-index "I-events")
-             " files: " (countdb "F*")
+             " files: " (countdb)
              ))
 
 (def (read file)
@@ -876,7 +876,7 @@
       (if (leveldb-iterator-valid? itor)
         (lp (1+ count))
         count))))
-        ;;(displayln "total: " count)))))
+;;(displayln "total: " count)))))
 
 (def (repairdb)
   "Repair the db"
