@@ -352,9 +352,7 @@
   (let ((maxid (1+ max)))
     (if (db-key? (format "~a" maxid))
       (get-next-id maxid)
-      (begin
-        (displayln (format "get-next-id: final ~a" maxid)))
-        maxid)))
+      maxid)))
 
 (def (inc-hc)
   ;; increment HC to next free id.
