@@ -30,6 +30,7 @@
   :ober/oberlib)
 
 (declare (not optimize-dead-definitions))
+(declare (not safe))
 (def version "0.06")
 
 (export #t)
