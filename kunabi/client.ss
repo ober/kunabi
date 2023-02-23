@@ -104,7 +104,7 @@
              " errors: " (count-index "I-errors")
              " regions: " (count-index "I-aws-region")
              " events: " (count-index "I-events")
-             " files: " (count-by-key "F*")
+             " files: " (count-index "I-files")
              ))
 
 (def (read file)
@@ -212,7 +212,8 @@
   (dp "in mark-file-processed")
   (let ((short (get-short file)))
     (format "marking ~A~%" file)
-    (db-put (format "F-~a" short) "t")))
+    (db-put (format "F-~a" short) "t")
+    (add-to-index "files" short)))
 
 (def (read-ct-file file)
   (ensure-db)
@@ -352,8 +353,8 @@
     (if (db-key? (format "~a" maxid))
       (get-next-id maxid)
       (begin
-        ;;(displayln (format "get-next-id: final ~a" maxid))
-        maxid))))
+        (displayln (format "get-next-id: final ~a" maxid)))
+        maxid)))
 
 (def (inc-hc)
   ;; increment HC to next free id.
