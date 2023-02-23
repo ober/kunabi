@@ -104,7 +104,7 @@
              " errors: " (count-index "I-errors")
              " regions: " (count-index "I-aws-region")
              " events: " (count-index "I-events")
-             " files: " (count-by-key "^F*")
+             " files: " (count-by-key "F*")
              ))
 
 (def (read file)
@@ -753,7 +753,7 @@
   (dp ">-- db-open")
   (cond
    ((equal? db-type leveldb:)
-    (let ((db-dir (format "~a/kunabi-db/" (user-info-home (user-info (user-name))))))
+    (let ((db-dir (or (getenv "kunabidb" #f) (format "~a/kunabi-db/" (user-info-home (user-info (user-name)))))))
       (dp (format "db-dir is ~a" db-dir))
       (unless (file-exists? db-dir)
         (create-directory* db-dir))
