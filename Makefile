@@ -18,15 +18,16 @@ build: deps
 linux-static-docker:
 	docker run -it \
 	-e GERBIL_PATH=/src/.gerbil \
-	-u "$(uid):$(gid)" \
+	-u "$(UID):$(GID)" \
     -v $(PWD):/src:z \
 	$(DOCKER_IMAGE) \
 	make -C /src linux-static
 
 linux-static: build
-	/usr/bin/time -avp $(GERBIL_HOME)/bin/gxc -o $(PROJECT)-bin -static \
+	/usr/bin/time -avp $(GERBIL_HOME)/bin/gxc -o $(PROJECT)-bin -static -O \
 	-cc-options "-Bstatic" \
 	-ld-options "-static -lpthread -L/usr/lib/x86_64-linux-gnu -lleveldb -lssl -ldl -lyaml -lz -lstdc++" \
+	-prelude "(declare (not safe))" \
 	-exe $(PROJECT)/$(PROJECT).ss
 
 clean:
