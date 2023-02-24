@@ -30,7 +30,7 @@
   :ober/oberlib)
 
 (declare (not optimize-dead-definitions))
-(declare (not safe))
+
 (def version "0.06")
 
 (export #t)
@@ -155,9 +155,10 @@
 	       (file-count (length ct-files)))
 
     (for (file ct-files)
-      ;;(spawn (lambda ()
-      (read-ct-file file)
-      ;;))
+      ;; (spawn
+      ;;  (lambda ()
+         (read-ct-file file)
+         ;;))
       (set! count (+ 1 count))
       (flush-all?)
       (set! count 0))
