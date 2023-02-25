@@ -155,10 +155,7 @@
 	       (file-count (length ct-files)))
 
     (for (file ct-files)
-      ;; (spawn
-      ;;  (lambda ()
-         (read-ct-file file)
-         ;;))
+      (read-ct-file file)
       (set! count (+ 1 count))
       (flush-all?)
       (set! count 0))
@@ -351,7 +348,7 @@
         (lp)))))
 
 (def (get-next-id max)
-  (let ((maxid (1+ max)))
+  (let ((maxid (2 * max)))
     (if (db-key? (format "~a" maxid))
       (get-next-id maxid)
       maxid)))
@@ -362,16 +359,6 @@
     (set! HC next)
     (db-put "HC" (format "~a" HC))))
 
-(def (get-next-id-binary max)
-  "Starting at zero, double up til we hit unused numeric keys"
-  (let lp ((hc max))
-    (displayln "gnid: " hc)
-    (when (db-key? hc)
-      (lp (* 2 hc)))
-    hc))
-
-(def (report)
-  (indices-report))
 
 (def (indices-report)
   (let ((total 0))
@@ -696,20 +683,17 @@
       (dp (format "process-row: doing db-batch on req-id: ~a on hash ~a" req-id (hash->list h)))
       (db-put req-id h)
       (dp (format "------------- end of batch of req-id on hash ----------"))
-      (spawn
-       (lambda ()
-
-         (when (string? .?errorCode)
-           (add-to-index "errors" .?errorCode)
-           (add-to-index .?errorCode req-id))
-         (add-to-index "source-ip-address" .sourceIPAddress)
-         (add-to-index .sourceIPAddress req-id)
-         (add-to-index "users" user)
-         (add-to-index user req-id)
-         (add-to-index "events" .eventName)
-         (add-to-index .eventName req-id)
-         (add-to-index "aws-region" .awsRegion)
-         (add-to-index .awsRegion req-id))))))
+      (when (string? .?errorCode)
+        (add-to-index "errors" .?errorCode)
+        (add-to-index .?errorCode req-id))
+      (add-to-index "source-ip-address" .sourceIPAddress)
+      (add-to-index .sourceIPAddress req-id)
+      (add-to-index "users" user)
+      (add-to-index user req-id)
+      (add-to-index "events" .eventName)
+      (add-to-index .eventName req-id)
+      (add-to-index "aws-region" .awsRegion)
+      (add-to-index .awsRegion req-id))))
 
 (def (add-to-indexes i-hash)
   (when (table? i-hash)
