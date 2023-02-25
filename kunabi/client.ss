@@ -348,7 +348,7 @@
         (lp)))))
 
 (def (get-next-id max)
-  (let ((maxid (2 * max)))
+  (let ((maxid (* 2 max)))
     (if (db-key? (format "~a" maxid))
       (get-next-id maxid)
       maxid)))
