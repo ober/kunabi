@@ -348,9 +348,9 @@
         (lp)))))
 
 (def (get-next-id max)
-  (let ((maxid (* 2 max)))
+  (let ((maxid (1+ max)))
     (if (db-key? (format "~a" maxid))
-      (get-next-id maxid)
+      (get-next-id (* 2 maxid)
       maxid)))
 
 (def (inc-hc)
@@ -358,7 +358,6 @@
   (let ((next (get-next-id HC)))
     (set! HC next)
     (db-put "HC" (format "~a" HC))))
-
 
 (def (indices-report)
   (let ((total 0))
