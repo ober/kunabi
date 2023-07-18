@@ -155,9 +155,8 @@
 			                       (not (equal? (path-strip-directory filename) ".gz"))))))
 	       (file-count (length ct-files))
          (pool []))
-
     (for (file ct-files)
-      (while (< 100 (length (all-threads)))
+      (while (< 3 (length (all-threads)))
         (thread-sleep! 1))
       (set! pool (cons (spawn (lambda () (time (read-ct-file file)))) pool))
       (set! count (+ 1 count))
@@ -237,7 +236,7 @@
 			                     'Records)))
 	          (for-each
 	            (lambda (row)
-		            as(set! count (+ count 1))
+		            (set! count (+ count 1))
                 (dp (format "row-> ~a" (hash->list row)))
                 (process-row row))
 	            mytables)
