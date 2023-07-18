@@ -18,6 +18,7 @@
   :std/iter
   :std/logger
   :std/misc/list
+  :std/misc/threads
   :std/net/address
   :std/net/httpd
   :std/pregexp
@@ -138,7 +139,7 @@
 (def (load-ct dir)
   ;;(##gc-report-set! #t)
   (dp (format ">-- load-ct: ~a" dir))
-  ;;(spawn watch-heap!)
+  (spawn watch-heap!)
   (load-indices-hash)
   (let* ((files 0)
 	       (rows 0)
@@ -155,7 +156,11 @@
 	       (file-count (length ct-files)))
 
     (for (file ct-files)
-      (read-ct-file file)
+      (while (< 8 (length (all-threads)))
+        (thread-sleep! 1))
+      (spawn
+       (lambda ()
+         (read-ct-file file)))
       (set! count (+ 1 count))
       (flush-all?)
       (set! count 0))
