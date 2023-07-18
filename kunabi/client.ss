@@ -156,9 +156,9 @@
 	       (file-count (length ct-files))
          (pool []))
     (for (file ct-files)
-      (while (< 3 (length (all-threads)))
-        (thread-sleep! 1))
-      (set! pool (cons (spawn (lambda () (time (read-ct-file file)))) pool))
+      (while (< 120 (length (all-threads)))
+        (thread-sleep! .05))
+      (set! pool (cons (spawn (lambda () (read-ct-file file))) pool))
       (set! count (+ 1 count))
       (flush-all?)
       (set! count 0))
@@ -244,7 +244,7 @@
       (mark-file-processed file)
       (let ((delta (- (time->seconds (current-time)) btime)))
         (displayln "rps: "
-                   (float->int (/ count delta )) " size: " count " delta: " delta))
+                   (float->int (/ count delta )) " size: " count " delta: " delta " threads: " (length (all-thread))))
       )))
 
 (def (number-only obj)
