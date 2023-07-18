@@ -18,6 +18,7 @@
    std/iter
    std/logger
    std/misc/list
+   std/misc/threads
    std/net/address
    std/net/httpd
    std/pregexp

@@ -153,17 +153,17 @@
 		                  (lambda (filename)
 			                  (and (equal? (path-extension filename) ".gz")
 			                       (not (equal? (path-strip-directory filename) ".gz"))))))
-	       (file-count (length ct-files)))
+	       (file-count (length ct-files))
+         (pool []))
 
     (for (file ct-files)
-      (while (< 8 (length (all-threads)))
+      (while (< 100 (length (all-threads)))
         (thread-sleep! 1))
-      (spawn
-       (lambda ()
-         (read-ct-file file)))
+      (set! pool (cons (spawn (lambda () (time (read-ct-file file)))) pool))
       (set! count (+ 1 count))
       (flush-all?)
       (set! count 0))
+    (for-each thread-join! pool)
     (flush-indices-hash)
     (db-write)
     (db-close)))
@@ -237,7 +237,7 @@
 			                     'Records)))
 	          (for-each
 	            (lambda (row)
-		            (set! count (+ count 1))
+		            as(set! count (+ count 1))
                 (dp (format "row-> ~a" (hash->list row)))
                 (process-row row))
 	            mytables)
@@ -780,7 +780,6 @@
    (else
     (displayln "Unknown db-type: " db-type)
     (exit 2))))
-
 
 (def (db-key? key)
   (dp (format ">-- db-key? with ~a" key))

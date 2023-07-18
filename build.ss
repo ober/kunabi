@@ -9,5 +9,4 @@
      "kunabi/kunabi"
      "-ld-options"
      "-lpthread -lleveldb -lyaml -ldl -lssl -lz -L/usr/lib64 -L/usr/pkg/lib -I/usr/pkg/include"
-     "-prelude" "(declare (not safe))"))
-  verbose: 10)
+     "-prelude" "(declare (not safe))")))

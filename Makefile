@@ -1,15 +1,15 @@
 PROJECT := kunabi
 
-DOCKER_IMAGE := "gerbil/alpine:amd64"
+DOCKER_IMAGE := "gerbil/fedora:smp-debugging"
 
-$(eval uid := $(shell id -u))
-$(eval gid := $(shell id -g))
+$(eval UID := $(shell id -u))
+$(eval GID := $(shell id -g))
 
 default: linux-static-docker
 
 deps:
-	/usr/bin/time -avp $(GERBIL_HOME)/bin/gxpkg install github.com/ober/oberlib
-	/usr/bin/time -avp $(GERBIL_HOME)/bin/gxpkg install github.com/yanndegat/colorstring
+	$(GERBIL_HOME)/bin/gxpkg install github.com/ober/oberlib
+	$(GERBIL_HOME)/bin/gxpkg install github.com/yanndegat/colorstring
 
 build: deps
 	$(GERBIL_HOME)/bin/gxpkg link $(PROJECT) /src || true
@@ -24,7 +24,7 @@ linux-static-docker:
 	make -C /src linux-static
 
 linux-static: build
-	/usr/bin/time -avp $(GERBIL_HOME)/bin/gxc -o $(PROJECT)-bin -static -O \
+	$(GERBIL_HOME)/bin/gxc -o $(PROJECT)-bin -static -O \
 	-cc-options "-Bstatic" \
 	-ld-options "-static -lpthread -L/usr/lib/x86_64-linux-gnu -lleveldb -lssl -ldl -lyaml -lz -lstdc++" \
 	-prelude "(declare (not safe))" \
