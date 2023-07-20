@@ -157,17 +157,16 @@
 	       (file-count (length ct-files))
          (pool []))
     (for (file ct-files)
-      ;;(time (read-ct-file file))
-      (while (< tmax (length (all-threads)))
-        (thread-sleep! .05))
-       (let ((thread (spawn (lambda () (read-ct-file file))))
-             (cpu (random-integer (##current-vm-processor-count))))
-      ;;(##thread-pin! thread cpu)
-      (set! pool (cons thread pool))
-      )
+      (time (read-ct-file file))
+      ;; (while (< tmax (length (all-threads)))
+      ;;   (thread-sleep! .05))
+      ;; (let ((thread (spawn (lambda () (read-ct-file file))))
+      ;;       (cpu (random-integer (##current-vm-processor-count))))
+        ;;(##thread-pin! thread cpu)
+      ;;(set! pool (cons thread pool)))
       (flush-all?)
-      )
-    (for-each thread-join! pool)
+      (set! count 0))
+    ;;(for-each thread-join! pool)
     (flush-indices-hash)
     (db-write)
     (db-close)))
@@ -238,8 +237,14 @@
 			                       (bytes->string
 			                        (uncompress file-input))))
 			                     'Records)))
-	          (for-each process-row mytables))))
-      (mark-file-processed file)
+            (for-each
+              (lambda (row)
+                (set! count (+ count 1))
+                (process-row row))
+              mytables))
+            (mark-file-processed file)))
+            ;;(for-each process-row mytables))))
+
       (let ((delta (- (time->seconds (current-time)) btime)))
         (displayln "rps: "
                    (float->int (/ count delta )) " size: " count " delta: " delta " threads: " (length (all-threads)))))))
@@ -314,8 +319,10 @@
         (begin
           (inc-hc)
           (set! hcn HC)
-          (db-put val HC)
-          (db-put (format "~a" HC) val)))
+          (spawn
+           (lambda ()
+             (db-put val HC)
+             (db-put (format "~a" HC) val)))))
       hcn)))
 
 (def (flush-all?)
@@ -324,7 +331,7 @@
     (begin
       (displayln "writing.... " write-back-count)
       ;;(type-of (car (##process-statistics)))
-      (flush-indices-hash)
+      (spawn (lambda ()(flush-indices-hash)))
       ;;(db-write)
       (set! write-back-count 0))))
 
