@@ -43,8 +43,6 @@
 
 (def use-write-backs #t)
 
-(setenv "GERBIL_HOME" (format "~a/.gerbil" (user-info-home (user-info (user-name)))))
-
 (def hc-hash (make-hash-table))
 (def vpc-totals (make-hash-table))
 
@@ -180,6 +178,7 @@
     seen))
 
 (def (add-to-index index entry)
+  "Add entry to index"
   (dp (format "in add-to-index index: ~a entry: ~a" index entry))
   (let ((index-in-global-hash? (hash-key? indices-hash index)))
     (dp (format  "index-in-global-hash? ~a ~a" index-in-global-hash? index))
@@ -267,21 +266,6 @@
 	        (substring str (1+ ix) jx)))
        (else #f))))
    (else str)))
-
-(define 101-fields [
-                    'awsRegion
-                    'eventID
-                    'eventName
-                    'eventSource
-                    'eventTime
-                    'eventType
-                    'recipientAccountId
-                    'requestID
-                    'requestParameters
-                    'responseElements
-                    'sourceIPAddress
-                    'userAgent
-                    'userIdentity])
 
 (def (getf field row)
   (hash-get row field))
@@ -375,7 +359,7 @@
     (displayln "indicies count total: " total)))
 
 (def (load-indices-hash)
-  (dp (format ">-- load-indices-hash: INDICES:~a" (db-key? "INDICES")))
+  "Load index hash"
   (inc-hc)
   (if (= (hash-length indices-hash) 0)
     (let ((has-key (db-key? "INDICES")))
@@ -680,7 +664,6 @@
              (user-agent (add-val .?userAgent))
              (user-identity .?userIdentity))))
 
-      ;;(dp (hash->list h))
       (set! write-back-count (+ write-back-count 1))
       (dp (format "process-row: doing db-batch on req-id: ~a on hash ~a" req-id (hash->list h)))
       (db-put req-id h)
@@ -780,16 +763,6 @@
    (catch (e)
      (raise e))))
 
-;; (def (put-leveldb key val)
-;;   (displayln "put-leveldb: " key " " val)
-;;   (try
-;;    (leveldb-put db key (object->u8vector val))
-;;    (catch (e)
-;;      (raise e))))
-
-;; (def (update-leveldb key val)
-;;   (put-leveldb key val))
-
 (def (remove-leveldb key)
   (dp (format "remove-leveldb: ~a" key)))
 
@@ -823,8 +796,6 @@
       (if (leveldb-iterator-valid? itor)
         (lp (1+ count))
         count))))
-
-;;(displayln "total: " count)))))
 
 (def (repairdb)
   "Repair the db"
