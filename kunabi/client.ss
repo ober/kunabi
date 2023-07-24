@@ -138,7 +138,7 @@
   (load-ct file))
 
 (def (load-ct dir)
-  ;;(##gc-report-set! #t)
+  "Entry point for processing cloudtrail files"
   (dp (format ">-- load-ct: ~a" dir))
   (spawn watch-heap!)
   (load-indices-hash)
@@ -234,10 +234,10 @@
       (call-with-input-file file
 	      (lambda (file-input)
 	        (let ((mytables (hash-ref
-			                     (read-json
+			                     (time (read-json
 			                      (open-input-string
 			                       (bytes->string
-			                        (uncompress file-input))))
+			                        (uncompress file-input)))))
 			                     'Records)))
             (for-each
               (lambda (row)
@@ -320,9 +320,8 @@
         (begin
           (inc-hc)
           (set! hcn HC)
-          (spawn (lambda ()
-                   (db-put val HC)
-                   (db-put (format "~a" HC) val)))))
+          (db-put val HC)
+          (db-put (format "~a" HC) val)))
       hcn)))
 
 (def (flush-all?)
@@ -330,9 +329,7 @@
   (if (> write-back-count max-wb-size)
     (begin
       (displayln "writing.... " write-back-count)
-      ;;(type-of (car (##process-statistics)))
       (flush-indices-hash)
-      ;;(db-write)
       (set! write-back-count 0))))
 
 (def (get-last-key)
@@ -362,7 +359,7 @@
       maxid)))
 
 (def (inc-hc)
-  ;; increment HC to next free id.
+  "increment HC to next free id."
   (let ((next (get-next-id HC)))
     (set! HC next)
     (db-put "HC" (format "~a" HC))))
@@ -418,10 +415,7 @@
   (if (db-key? idx)
     (let ((entries (hash-keys (db-get idx))))
       (if (list? entries)
-	      (for-each
-	        (lambda (x)
-	          (displayln x))
-	        (sort! entries eq?))
+	      (for-each displayln (sort! entries eq?))
 	      (begin
 	        (displayln "did not get list back from entries")
 	        (type-of entries))))
@@ -464,6 +458,7 @@
 	      (resolve-records matches))
       (displayln "Could not find entry in indices-db for " look-for))))
 
+;;;;;;;;;; vpc stuff
 (def (process-vpc-row row)
   (with ([ date
 	         version
@@ -718,27 +713,12 @@
 ;; db stuff
 
 (def (db-batch key value)
-  ;;  (if (table? value)
-  ;;    (displayln "db-batch:got table in value key:" key " value hash:"  (hash->list value)))
-  ;;  (dp (format "db-batch: key: ~a value: ~a" key value))
-  (cond
-   ((equal? db-type leveldb:)
-    (unless (string? key) (dp (format "key: ~a val: ~a" (type-of key) (type-of value))))
-    (leveldb-writebatch-put wb key (object->u8vector value)))
-   (else
-    (displayln "Unknown db-type: " db-type)
-    (exit 2))))
+  (unless (string? key) (dp (format "key: ~a val: ~a" (type-of key) (type-of value))))
+  (leveldb-writebatch-put wb key (object->u8vector value)))
 
 (def (db-put key value)
   (dp (format "<----> db-put: key: ~a val: ~a" key value))
-  (cond
-   ;; ((equal? db-type lmdb:)
-   ;;  (put-lmdb key value))
-   ((equal? db-type leveldb:)
-    (leveldb-put db key (object->u8vector value)))
-   (else
-    (displayln "Unknown db-type: " db-type)
-    (exit 2))))
+  (leveldb-put db key (object->u8vector value)))
 
 (def (ensure-db)
   (unless db
@@ -746,24 +726,19 @@
 
 (def (db-open)
   (dp ">-- db-open")
-  (cond
-   ((equal? db-type leveldb:)
-    (let ((db-dir (or (getenv "kunabidb" #f) (format "~a/kunabi-db/" (user-info-home (user-info (user-name)))))))
-      (dp (format "db-dir is ~a" db-dir))
-      (unless (file-exists? db-dir)
-        (create-directory* db-dir))
-      (let ((location (format "~a/records" db-dir)))
-        (leveldb-open location (leveldb-options
-                                paranoid-checks: #t
-                                max-open-files: (def-num (getenv "k_max_files" #f))
-                                bloom-filter-bits: (def-num (getenv "k_bloom_bits" #f))
-                                compression: #t
-                                block-size: (def-num (getenv "k_block_size" #f))
-                                write-buffer-size: (def-num (getenv "k_write_buffer" (* 1024 1024 16)))
-                                lru-cache-capacity: (def-num (getenv "k_lru_cache" 10000)))))))
-   (else
-    (displayln "Unknown db-type: " db-type)
-    (exit 2))))
+  (let ((db-dir (or (getenv "kunabidb" #f) (format "~a/kunabi-db/" (user-info-home (user-info (user-name)))))))
+    (dp (format "db-dir is ~a" db-dir))
+    (unless (file-exists? db-dir)
+      (create-directory* db-dir))
+    (let ((location (format "~a/records" db-dir)))
+      (leveldb-open location (leveldb-options
+                              paranoid-checks: #t
+                              max-open-files: (def-num (getenv "k_max_files" #f))
+                              bloom-filter-bits: (def-num (getenv "k_bloom_bits" #f))
+                              compression: #t
+                              block-size: (def-num (getenv "k_block_size" #f))
+                              write-buffer-size: (def-num (getenv "k_write_buffer" (* 1024 1024 16)))
+                              lru-cache-capacity: (def-num (getenv "k_lru_cache" 10000)))))))
 
 (def (def-num num)
   (if (string? num)
@@ -772,57 +747,26 @@
 
 (def (db-get key)
   (dp (format "db-get: ~a" key))
-  (cond
-   ;; ((equal? db-type lmdb:)
-   ;;  (get-lmdb key))
-   ((equal? db-type leveldb:)
-    (let ((ret (leveldb-get db (format "~a" key))))
-      (if (u8vector? ret)
-        (u8vector->object ret)
-        "N/A")))
-   (else
-    (displayln "Unknown db-type: " db-type)
-    (exit 2))))
+  (let ((ret (leveldb-get db (format "~a" key))))
+    (if (u8vector? ret)
+      (u8vector->object ret)
+      "N/A")))
 
 (def (db-key? key)
   (dp (format ">-- db-key? with ~a" key))
-  (cond
-   ((equal? db-type leveldb:)
-    (leveldb-key? db (format "~a" key)))
-   (else
-    (displayln "Unknown db-type: " db-type)
-    (exit 2))))
+  (leveldb-key? db (format "~a" key)))
 
 (def (db-write)
   (dp "in db-write")
-  (cond
-   ((equal? db-type leveldb:)
-    (leveldb-write db wb))
-   (else
-    (displayln "Unknown db-type: " db-type)
-    (exit 2))))
+  (leveldb-write db wb))
 
 (def (db-close)
   (dp "in db-close")
-  (cond
-   ;; ((equal? db-type lmdb:)
-   ;;  (displayln "db-close lmdb:"))
-   ((equal? db-type leveldb:)
-    (leveldb-close db))
-   (else
-    (displayln "Unknown db-type: " db-type)
-    (exit 2))))
+  (leveldb-close db))
 
 (def (db-init)
   (dp "in db-init")
-  (cond
-   ;; ((equal? db-type lmdb:)
-   ;;  (displayln "lmdb noop db-init"))
-   ((equal? db-type leveldb:)
-    (leveldb-writebatch))
-   (else
-    (displayln "Unknown db-type: " db-type)
-    (exit 2))))
+  (leveldb-writebatch))
 
 ;; leveldb stuff
 (def (get-leveldb key)
@@ -836,15 +780,15 @@
    (catch (e)
      (raise e))))
 
-(def (put-leveldb key val)
-  (displayln "put-leveldb: " key " " val)
-  (try
-   (leveldb-put db key (object->u8vector val))
-   (catch (e)
-     (raise e))))
+;; (def (put-leveldb key val)
+;;   (displayln "put-leveldb: " key " " val)
+;;   (try
+;;    (leveldb-put db key (object->u8vector val))
+;;    (catch (e)
+;;      (raise e))))
 
-(def (update-leveldb key val)
-  (put-leveldb key val))
+;; (def (update-leveldb key val)
+;;   (put-leveldb key val))
 
 (def (remove-leveldb key)
   (dp (format "remove-leveldb: ~a" key)))
