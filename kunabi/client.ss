@@ -165,7 +165,7 @@
          (let ((thread (spawn (lambda () (read-ct-file file)))))
            (set! pool (cons thread pool))))
         (else
-         (time (read-ct-file file))))
+         (read-ct-file file)))
       (flush-all?)
       (set! count 0))
     (cond-expand (gerbil-smp (for-each thread-join! pool)))
