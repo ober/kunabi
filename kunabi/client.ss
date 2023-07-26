@@ -230,7 +230,7 @@
 	 (read-json
 		(open-input-string
 		 (bytes->string
-			(uncompress file-input))))
+			(uncompress file))))
 	 'Records))
 
 (def (read-ct-file file)
