@@ -148,8 +148,6 @@
   (spawn watch-heap!)
   (load-indices-hash)
   (let* ((count 0)
-	       (etime 0)
-	       (btime (time->seconds (current-time)))
 	       (ct-files (find-ct-files "."))
          (pool []))
     (for (file ct-files)
