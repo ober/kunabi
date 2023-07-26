@@ -135,6 +135,12 @@
 (def (ct file)
   (load-ct file))
 
+(def (find-ct-files dir)
+  (find-files dir
+		          (lambda (filename)
+			          (and (equal? (path-extension filename) ".gz")
+			               (not (equal? (path-strip-directory filename) ".gz"))))))
+
 (def (load-ct dir)
   "Entry point for processing cloudtrail files"
   (dp (format ">-- load-ct: ~a" dir))
@@ -147,11 +153,7 @@
 	       (etime 0)
 	       (btime (time->seconds (current-time)))
 	       (total-count 0)
-	       (ct-files
-	        (find-files dir
-		                  (lambda (filename)
-			                  (and (equal? (path-extension filename) ".gz")
-			                       (not (equal? (path-strip-directory filename) ".gz"))))))
+	       (ct-files (find-ct-files))
 	       (file-count (length ct-files))
          (pool []))
     (for (file ct-files)
