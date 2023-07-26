@@ -242,7 +242,7 @@
       (dp (memory-usage))
       (call-with-input-file file
 	      (lambda (file-input)
-	        (let ((mytables (load-ct-file file)))
+	        (let ((mytables (load-ct-file file-input)))
             (for-each
               (lambda (row)
                 (set! count (+ count 1))
