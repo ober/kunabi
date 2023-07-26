@@ -49,6 +49,7 @@
 (def wb (db-init))
 (def db (db-open))
 
+(def add-val-cache (hash))
 (def HC 0)
 (def write-back-count 0)
 (def max-wb-size (def-num (getenv "k_max_wb" 100000)))
@@ -242,7 +243,7 @@
                 (set! count (+ count 1))
                 (process-row row))
               mytables))
-            (mark-file-processed file)))
+          (mark-file-processed file)))
 
       (let ((delta (- (time->seconds (current-time)) btime)))
         (displayln
@@ -294,12 +295,20 @@
       (dp (format "get-val: unknown hcn pattern: ~a" hcn-safe))))
     ret))
 
+(def (add-val-seen val)
+  (let ((hit 0)
+        (seen? (hash-key? add-val-cache val)))
+    (if seen?
+      (set! hit (hash-get add-val-cache val))
+      (set! hit (db-key? val)))
+    hit))
+
 (def (add-val val)
   (unless (string? val)
     val)
   (when (string? val)
     (dp (format "add-val: ~a" val))
-    (let ((seen (db-key? val))
+    (let* ((seen ((add-val-seen val)))
           (hcn 0))
       (if seen
         (set! hcn (db-get val))
@@ -500,10 +509,13 @@
 	      (btime 0)
 	      (total-count 0)
 	      (etime 0)
-        (files (find-files dir
-                           (lambda (filename)
-                             (and (equal? (path-extension filename) ".gz")
-                                  (not (equal? (path-strip-directory filename) ".gz")))))))
+        (files (find-files
+                dir
+                (lambda
+                    (filename)
+                  (and
+                    (equal? (path-extension filename) ".gz")
+                    (not (equal? (path-strip-directory filename) ".gz")))))))
 
     (for (file files)
       (displayln ".+")
