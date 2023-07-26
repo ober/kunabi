@@ -297,9 +297,9 @@
 
 (def (add-val-seen val)
   (let ((hit 0)
-        (seen? (hash-key? add-val-cache val)))
-    (if seen?
-      (set! hit (hash-get add-val-cache val))
+        (seen (hash-ref add-val-cache val)))
+    (if seen
+      (set! hit seen)
       (set! hit (db-key? val)))
     hit))
 
