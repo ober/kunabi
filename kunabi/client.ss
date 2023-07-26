@@ -308,7 +308,7 @@
     val)
   (when (string? val)
     (dp (format "add-val: ~a" val))
-    (let* ((seen ((add-val-seen val)))
+    (let* ((seen (add-val-seen val))
           (hcn 0))
       (if seen
         (set! hcn (db-get val))
