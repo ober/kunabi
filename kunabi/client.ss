@@ -153,7 +153,7 @@
 	       (etime 0)
 	       (btime (time->seconds (current-time)))
 	       (total-count 0)
-	       (ct-files (find-ct-files))
+	       (ct-files (find-ct-files "."))
 	       (file-count (length ct-files))
          (pool []))
     (for (file ct-files)
@@ -306,8 +306,8 @@
         (begin
           (inc-hc)
           (set! hcn HC)
-          (db-put val HC)
-          (db-put (format "~a" HC) val)))
+          (db-batch val HC)
+          (db-batch (format "~a" HC) val)))
       hcn)))
 
 (def (flush-all?)
@@ -315,6 +315,7 @@
   (if (> write-back-count max-wb-size)
     (begin
       (displayln "writing.... " write-back-count)
+      (leveldb-write db wb)
       (flush-indices-hash)
       (set! write-back-count 0))))
 
@@ -668,7 +669,7 @@
 
       (set! write-back-count (+ write-back-count 1))
       (dp (format "process-row: doing db-batch on req-id: ~a on hash ~a" req-id (hash->list h)))
-      (db-put req-id h)
+      (db-batch req-id h)
       (dp (format "------------- end of batch of req-id on hash ----------"))
       (when (string? .?errorCode)
         (add-to-index "errors" .?errorCode)
