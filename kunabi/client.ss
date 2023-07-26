@@ -312,8 +312,10 @@
         (begin
           (inc-hc)
           (set! hcn HC)
-          (db-batch val HC)
-          (db-batch (format "~a" HC) val)))
+          (spawn
+           (lambda ()
+             (db-put val HC)
+             (db-put (format "~a" HC) val)))))
       hcn)))
 
 (def (flush-all?)
