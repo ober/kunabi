@@ -207,7 +207,7 @@
   (let ((current (make-hash-table)))
     (hash-put! current entry #t)
     (hash-put! indices-hash index current)
-    (db-put (format "I-~a" index) current)))
+    (db-batch (format "I-~a" index) current)))
 
 (def (update-db-index index entry)
   "Fetch the index from db, then add our new entry, and save."
@@ -222,8 +222,16 @@
   (dp "in mark-file-processed")
   (let ((short (get-short file)))
     (format "marking ~A~%" file)
-    (db-put (format "F-~a" short) "t")
+    (db-batch (format "F-~a" short) "t")
     (add-to-index "files" short)))
+
+(def (load-ct-file file)
+  (hash-ref
+	 (read-json
+		(open-input-string
+		 (bytes->string
+			(uncompress file-input))))
+	 'Records))
 
 (def (read-ct-file file)
   (ensure-db)
@@ -234,12 +242,7 @@
       (dp (memory-usage))
       (call-with-input-file file
 	      (lambda (file-input)
-	        (let ((mytables (hash-ref
-			                     (time (read-json
-			                      (open-input-string
-			                       (bytes->string
-			                        (uncompress file-input)))))
-			                     'Records)))
+	        (let ((mytables (load-ct-file file)))
             (for-each
               (lambda (row)
                 (set! count (+ count 1))
@@ -248,8 +251,11 @@
             (mark-file-processed file)))
 
       (let ((delta (- (time->seconds (current-time)) btime)))
-        (displayln "rps: "
-                   (float->int (/ count delta )) " size: " count " delta: " delta " threads: " (length (all-threads)))))))
+        (displayln
+         "rps: " (float->int (/ count delta ))
+         " size: " count
+         " delta: " delta
+         " threads: " (length (all-threads)))))))
 
 (def (number-only obj)
   (if (number? obj)
@@ -349,7 +355,7 @@
   "increment HC to next free id."
   (let ((next (get-next-id HC)))
     (set! HC next)
-    (db-put "HC" (format "~a" HC))))
+    (db-batch "HC" (format "~a" HC))))
 
 (def (indices-report)
   (let ((total 0))
@@ -384,13 +390,13 @@
   (let ((indices (make-hash-table)))
     (for (index (hash-keys indices-hash))
       (dp (format "fih: index: ~a" index))
-      (db-put (format "I-~a" index) (hash-get indices-hash index))
+      (db-batch (format "I-~a" index) (hash-get indices-hash index))
       (hash-put! indices index #t))
-    (db-put "INDICES" indices)))
+    (db-batch "INDICES" indices)))
 
 (def (flush-vpc-totals)
   (for (cid (hash-keys vpc-totals))
-    (db-put (format "~a" cid) (hash-get vpc-totals cid))))
+    (db-batch (format "~a" cid) (hash-get vpc-totals cid))))
 
 (def (count-index idx)
   (if (db-key? idx)
@@ -537,7 +543,7 @@
         (when (host-info? lookup)
           (let ((lookup-name (host-info-name lookup)))
             (unless (string=? lookup-name ip)
-              (db-put (format "H-~a" ip) lookup-name))))))))
+              (db-batch (format "H-~a" ip) lookup-name))))))))
 
 (def (resolve-all-hosts)
   (let ((threads [])
@@ -718,7 +724,7 @@
       (create-directory* db-dir))
     (let ((location (format "~a/records" db-dir)))
       (leveldb-open location (leveldb-options
-                              paranoid-checks: #t
+                              paranoid-checks: #f
                               max-open-files: (def-num (getenv "k_max_files" #f))
                               bloom-filter-bits: (def-num (getenv "k_bloom_bits" #f))
                               compression: #t
