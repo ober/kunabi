@@ -297,10 +297,12 @@
 
 (def (add-val-seen val)
   (let ((hit 0)
-        (seen (hash-ref add-val-cache val)))
+        (seen (hash-get add-val-cache val)))
     (if seen
       (set! hit seen)
-      (set! hit (db-key? val)))
+      (begin
+        (set! hit (db-key? val))
+        (hash-put! add-val-cache val hit)))
     hit))
 
 (def (add-val val)
