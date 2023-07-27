@@ -19,6 +19,7 @@
   :std/logger
   :std/misc/list
   :std/misc/threads
+  :std/misc/queue
   :std/net/address
   :std/net/httpd
   :std/pregexp
@@ -32,7 +33,7 @@
 
 (declare (not optimize-dead-definitions))
 
-(def version "0.06")
+(def version "0.07")
 
 (export #t)
 
@@ -49,7 +50,6 @@
 (def wb (db-init))
 (def db (db-open))
 
-(def add-val-cache (hash))
 (def HC 0)
 (def write-back-count 0)
 (def max-wb-size (def-num (getenv "k_max_wb" 100000)))
@@ -164,7 +164,7 @@
       (flush-all?)
       (set! count 0))
     (cond-expand (gerbil-smp (for-each thread-join! pool)))
-    (flush-indices-hash)
+    (flush-queues)
     (db-write)
     (db-close)))
 
@@ -174,44 +174,44 @@
          (seen (db-key? (format "F-~a" short))))
     seen))
 
-(def (add-to-index index entry)
-  "Add entry to index"
-  (dp (format "in add-to-index index: ~a entry: ~a" index entry))
-  (let ((index-in-global-hash? (hash-key? indices-hash index)))
-    (dp (format  "index-in-global-hash? ~a ~a" index-in-global-hash? index))
-    (if index-in-global-hash?
-      (new-index-entry index entry)
-      (begin
-	      (dp (format "ati: index not in global hash for ~a. adding" index))
-	      (hash-put! indices-hash index (hash))
-	      (let ((have-db-entry-for-index (db-key? (format "I-~a" index))))
-	        (dp (format "have-db-entry-for-index: ~a key: I-~a" have-db-entry-for-index index))
-	        (if have-db-entry-for-index
-	          (update-db-index index entry)
-	          (new-db-index index entry)))))))
+;; (def (add-to-index index entry)
+;;   "Add entry to index"
+;;   (dp (format "in add-to-index index: ~a entry: ~a" index entry))
+;;   (let ((index-in-global-hash? (hash-key? indices-hash index)))
+;;     (dp (format  "index-in-global-hash? ~a ~a" index-in-global-hash? index))
+;;     (if index-in-global-hash?
+;;       (new-index-entry index entry)
+;;       (begin
+;; 	      (dp (format "ati: index not in global hash for ~a. adding" index))
+;; 	      (hash-put! indices-hash index (hash))
+;; 	      (let ((have-db-entry-for-index (db-key? (format "I-~a" index))))
+;; 	        (dp (format "have-db-entry-for-index: ~a key: I-~a" have-db-entry-for-index index))
+;; 	        (if have-db-entry-for-index
+;; 	          (update-db-index index entry)
+;; 	          (new-db-index index entry)))))))
 
-(def (new-index-entry index entry)
-  "Add entry to index in global hash"
-  (dp (format "new-index-entry: ~a ~a" index entry))
-  (unless (hash-key? (hash-get indices-hash index) entry)
-    (hash-put! (hash-get indices-hash index) entry #t)))
+;; (def (new-index-entry index entry)
+;;   "Add entry to index in global hash"
+;;   (dp (format "new-index-entry: ~a ~a" index entry))
+;;   (unless (hash-key? (hash-get indices-hash index) entry)
+;;     (hash-put! (hash-get indices-hash index) entry #t)))
 
-(def (new-db-index index entry)
-  "New index, with entry to db"
-  (dp (format "new-db-index: ~a ~a" index entry))
-  (let ((current (make-hash-table)))
-    (hash-put! current entry #t)
-    (hash-put! indices-hash index current)
-    (db-batch (format "I-~a" index) current)))
+;; (def (new-db-index index entry)
+;;   "New index, with entry to db"
+;;   (dp (format "new-db-index: ~a ~a" index entry))
+;;   (let ((current (make-hash-table)))
+;;     (hash-put! current entry #t)
+;;     (hash-put! indices-hash index current)
+;;     (db-batch (format "I-~a" index) current)))
 
-(def (update-db-index index entry)
-  "Fetch the index from db, then add our new entry, and save."
-  (dp (format "update-db-index: ~a ~a" index entry))
-  (let ((current (db-get (format "I-~a" index))))
-    (hash-put! current entry #t)
-    (hash-put! indices-hash index current)
-    (dp (format "- ~a:~a length hash: ~a" index entry (hash-length current)))
-    (format "I-~a" index) current))
+;; (def (update-db-index index entry)
+;;   "Fetch the index from db, then add our new entry, and save."
+;;   (dp (format "update-db-index: ~a ~a" index entry))
+;;   (let ((current (db-get (format "I-~a" index))))
+;;     (hash-put! current entry #t)
+;;     (hash-put! indices-hash index current)
+;;     (dp (format "- ~a:~a length hash: ~a" index entry (hash-length current)))
+;;     (format "I-~a" index) current))
 
 (def (mark-file-processed file)
   (dp "in mark-file-processed")
@@ -295,32 +295,20 @@
       (dp (format "get-val: unknown hcn pattern: ~a" hcn-safe))))
     ret))
 
-(def (add-val-seen val)
-  (let ((hit 0)
-        (seen (hash-get add-val-cache val)))
-    (if seen
-      (set! hit seen)
-      (begin
-        (set! hit (db-key? val))
-        (hash-put! add-val-cache val hit)))
-    hit))
-
 (def (add-val val)
   (unless (string? val)
     val)
   (when (string? val)
     (dp (format "add-val: ~a" val))
-    (let* ((seen (add-val-seen val))
+    (let ((seen (db-key? val))
           (hcn 0))
       (if seen
         (set! hcn (db-get val))
         (begin
           (inc-hc)
           (set! hcn HC)
-          (spawn
-           (lambda ()
-             (db-put val HC)
-             (db-put (format "~a" HC) val)))))
+          (db-put val HC)
+          (db-put (format "~a" HC) val)))
       hcn)))
 
 (def (flush-all?)
@@ -329,7 +317,7 @@
     (begin
       (displayln "writing.... " write-back-count)
       (leveldb-write db wb)
-      (flush-indices-hash)
+      (flush-queues)
       (set! write-back-count 0))))
 
 (def (get-last-key)
@@ -665,39 +653,41 @@
   (let-hash row
     (let*
         ((user (find-user .?userIdentity))
-         (req-id (number->string (add-val (or .?requestID .?eventID))))
+         (req-id (or .?requestID .?eventID))
          (h (hash
-             (aws-region (add-val .?awsRegion))
-             (error-code (add-val .?errorCode))
-             (error-message (add-val .?errorMessage))
+             (aws-region .?awsRegion)
+             (error-code .?errorCode)
+             (error-message .?errorMessage)
              (event-id .?eventID)
-             (event-name (add-val .?eventName))
-             (event-source (add-val .?eventSource))
+             (event-name  .?eventName)
+             (event-source .?eventSource)
              (event-time .?eventTime)
-             (event-type (add-val .?eventType))
-             (recipient-account-id (add-val .?recipientAccountId))
+             (event-type .?eventType)
+             (recipient-account-id .?recipientAccountId)
              (request-parameters .?requestParameters)
-             (user (add-val user))
+             (user user)
              (response-elements .?responseElements)
-             (source-ip-address (add-val .?sourceIPAddress))
-             (user-agent (add-val .?userAgent))
+             (source-ip-address .?sourceIPAddress)
+             (user-agent .?userAgent)
              (user-identity .?userIdentity))))
 
       (set! write-back-count (+ write-back-count 1))
       (dp (format "process-row: doing db-batch on req-id: ~a on hash ~a" req-id (hash->list h)))
       (db-batch req-id h)
       (dp (format "------------- end of batch of req-id on hash ----------"))
-      (when (string? .?errorCode)
-        (add-to-index "errors" .?errorCode)
-        (add-to-index .?errorCode req-id))
-      (add-to-index "source-ip-address" .sourceIPAddress)
-      (add-to-index .sourceIPAddress req-id)
-      (add-to-index "users" user)
-      (add-to-index user req-id)
-      (add-to-index "events" .eventName)
-      (add-to-index .eventName req-id)
-      (add-to-index "aws-region" .awsRegion)
-      (add-to-index .awsRegion req-id))))
+
+      ;; (when (string? .?errorCode)
+      ;;   (add-to-index "errors" .?errorCode)
+      ;;   (add-to-index .?errorCode req-id))
+      ;; (add-to-index "source-ip-address" .sourceIPAddress)
+      ;; (add-to-index .sourceIPAddress req-id)
+      ;; (add-to-index "users" user)
+      ;; (add-to-index user req-id)
+      ;; (add-to-index "events" .eventName)
+      ;; (add-to-index .eventName req-id)
+      ;; (add-to-index "aws-region" .awsRegion)
+      ;; (add-to-index .awsRegion req-id))))
+      )))
 
 (def (add-to-indexes i-hash)
   (when (table? i-hash)
