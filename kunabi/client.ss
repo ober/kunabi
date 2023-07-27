@@ -147,7 +147,6 @@
   "Entry point for processing cloudtrail files"
   (dp (format ">-- load-ct: ~a" dir))
   (spawn watch-heap!)
-  (load-indices-hash)
   (let* ((count 0)
 	       (ct-files (find-ct-files "."))
          (pool []))
@@ -164,7 +163,6 @@
       (flush-all?)
       (set! count 0))
     (cond-expand (gerbil-smp (for-each thread-join! pool)))
-    (flush-queues)
     (db-write)
     (db-close)))
 
@@ -217,8 +215,7 @@
   (dp "in mark-file-processed")
   (let ((short (get-short file)))
     (format "marking ~A~%" file)
-    (db-batch (format "F-~a" short) "t")
-    (add-to-index "files" short)))
+    (db-batch (format "F-~a" short) "t")))
 
 (def (load-ct-file file)
   (hash-ref
@@ -317,7 +314,6 @@
     (begin
       (displayln "writing.... " write-back-count)
       (leveldb-write db wb)
-      (flush-queues)
       (set! write-back-count 0))))
 
 (def (get-last-key)
@@ -362,32 +358,32 @@
      indices-hash)
     (displayln "indicies count total: " total)))
 
-(def (load-indices-hash)
-  "Load index hash"
-  (inc-hc)
-  (if (= (hash-length indices-hash) 0)
-    (let ((has-key (db-key? "INDICES")))
-      (displayln ">>--- Have INDICES " has-key)
-      (if has-key
-	      (begin ;; load it up.
-	        (dp (format "load-indices-hash records has no INDICES entry"))
-	        (let ((indices2 (db-get "INDICES")))
-            (dp (hash->list indices2))
-	          (for-each
-	            (lambda (index)
-                (displayln (format "index: ~a" index))
-		            (let ((index-int (db-get index)))
-		              (hash-put! indices-hash index index-int)))
-	            indices2)))))
-    (displayln "No INDICES entry. skipping hash loading")))
+;; (def (load-indices-hash)
+;;   "Load index hash"
+;;   (inc-hc)
+;;   (if (= (hash-length indices-hash) 0)
+;;     (let ((has-key (db-key? "INDICES")))
+;;       (displayln ">>--- Have INDICES " has-key)
+;;       (if has-key
+;; 	      (begin ;; load it up.
+;; 	        (dp (format "load-indices-hash records has no INDICES entry"))
+;; 	        (let ((indices2 (db-get "INDICES")))
+;;             (dp (hash->list indices2))
+;; 	          (for-each
+;; 	            (lambda (index)
+;;                 (displayln (format "index: ~a" index))
+;; 		            (let ((index-int (db-get index)))
+;; 		              (hash-put! indices-hash index index-int)))
+;; 	            indices2)))))
+;;     (displayln "No INDICES entry. skipping hash loading")))
 
-(def (flush-indices-hash)
-  (let ((indices (make-hash-table)))
-    (for (index (hash-keys indices-hash))
-      (dp (format "fih: index: ~a" index))
-      (db-batch (format "I-~a" index) (hash-get indices-hash index))
-      (hash-put! indices index #t))
-    (db-batch "INDICES" indices)))
+;; (def (flush-indices-hash)
+;;   (let ((indices (make-hash-table)))
+;;     (for (index (hash-keys indices-hash))
+;;       (dp (format "fih: index: ~a" index))
+;;       (db-batch (format "I-~a" index) (hash-get indices-hash index))
+;;       (hash-put! indices index #t))
+;;     (db-batch "INDICES" indices)))
 
 (def (flush-vpc-totals)
   (for (cid (hash-keys vpc-totals))
@@ -689,12 +685,12 @@
       ;; (add-to-index .awsRegion req-id))))
       )))
 
-(def (add-to-indexes i-hash)
-  (when (table? i-hash)
-    (hash-for-each
-     (lambda (k v)
-       (add-to-index k v))
-     i-hash)))
+;; (def (add-to-indexes i-hash)
+;;   (when (table? i-hash)
+;;     (hash-for-each
+;;      (lambda (k v)
+;;        (add-to-index k v))
+;;      i-hash)))
 
 (def (get-val-t val)
   (let ((res (get-val val)))
