@@ -44,6 +44,7 @@
    ("ct" (hash (description: "ct <directory> => Load all files in dir. ") (usage: "") (count: 1)))
    ("compact" (hash (description: "Compact ") (usage: "compact") (count: 0)))
    ("countdb" (hash (description: "Count how many db entries there are ") (usage: "count") (count: 0)))
+   ("count-key" (hash (description: "Count how many db entries there are for key ") (usage: "count-key <key>") (count: 1)))
    ("le" (hash (description: "List all event names. ") (usage: "le") (count: 0)))
    ("lec" (hash (description: "lec => List all Error Codes") (usage: "lec") (count: 0)))
    ("lip" (hash (description: "lip => List all source ips") (usage: "lip") (count: 0)))
