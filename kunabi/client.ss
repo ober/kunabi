@@ -130,8 +130,8 @@
 (def (source-ips)
   (list-source-ips))
 
-(def (summaries)
-  (summary-by-ip))
+;; (def (summaries)
+;;   (summary-by-ip))
 
 (def (vpc file)
   (load-vpc file))
@@ -444,11 +444,11 @@
     (db-close)
     (displayln "Total: " total-count)))
 
-(def (summary-by-ip)
-  (let (summaries (sort! (hash-keys (db-get "I-source-ip-address")) eq?))
-    (for (sumation summaries)
-      (summary sumation)
-      (displayln ""))))
+;; (def (summary-by-ip)
+;;   (let (summaries (sort! (hash-keys (db-get "I-source-ip-address")) eq?))
+;;     (for (sumation summaries)
+;;       (summary sumation)
+;;       (displayln ""))))
 
 (def (ip? x)
   (pregexp-match "^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}" x))
@@ -598,27 +598,13 @@
 
       (set! write-back-count (+ write-back-count 1))
       (db-batch req-id h)
-      (db-batch (format "user:~a:~a" user epoch) req-id)
-      (db-batch (format "event-name:~a:~a" .?eventName epoch) req-id)
-
-      ;; (when (string? .?errorCode)
-      ;;   (add-to-index "errors" .?errorCode)
-      ;;   (add-to-index .?errorCode req-id))
-      ;; (add-to-index "source-ip-address" .sourceIPAddress)
-      ;; (add-to-index .sourceIPAddress req-id)
-      ;; (add-to-index "users" user)
-      ;; (add-to-index user req-id)
-      ;; (add-to-index "events" .eventName)
-      ;; (add-to-index .eventName req-id)
-      ;; (add-to-index "aws-region" .awsRegion)
-      ;; (add-to-index .awsRegion req-id))))
+      (when (string? user)
+        (db-batch (format "user:~a:~a" user epoch) req-id))
+      (when (string? .?eventName)
+        (db-batch (format "event-name:~a:~a" .?eventName epoch) req-id))
+      (when (string? .?errorCode)
+        (db-batch (format "errorCode:~a:~a" .errorCode epoch) req-id))
       )))
-
-(def (get-val-t val)
-  (let ((res (get-val val)))
-    (if (table? res)
-      (hash->list res)
-      res)))
 
 ;; db stuff
 
@@ -642,7 +628,7 @@
       (create-directory* db-dir))
     (let ((location (format "~a/records" db-dir)))
       (leveldb-open location (leveldb-options
-                              paranoid-checks: #f
+                              paranoid-checks: #t
                               max-open-files: (def-num (getenv "k_max_files" #f))
                               bloom-filter-bits: (def-num (getenv "k_bloom_bits" #f))
                               compression: #t
