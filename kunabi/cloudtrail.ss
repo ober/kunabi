@@ -82,8 +82,7 @@
 
 ;; readers
 
-
-(def (get-by-key key)
+(def (resolve-by-key key)
   (let ((itor (leveldb-iterator db)))
     (leveldb-iterator-seek itor (format "~a" key))
     (let lp ((res '()))
@@ -96,7 +95,7 @@
           res)
         res))))
 
-(def (uniq-by-prefix key)
+(def (uniq-by-mid-prefix key)
   (let ((itor (leveldb-iterator db)))
     (leveldb-iterator-seek itor (format "~a:" key))
     (let lp ((res '()))
@@ -112,34 +111,28 @@
         res))))
 
 (def (ln)
-  (let (users (unique! (sort! (uniq-by-prefix "user") eq?)))
+  (let (users (unique! (sort! (uniq-by-mid-prefix "user") eq?)))
     (for-each displayln (reverse users))))
 
 (def (le)
-  (let (events (unique! (sort! (uniq-by-prefix "event-name") eq?)))
+  (let (events (unique! (sort! (uniq-by-mid-prefix "event-name") eq?)))
     (for-each displayln (reverse events))))
 
 (def (lec)
-  (let (events (unique! (sort! (uniq-by-prefix "errorCode") eq?)))
+  (let (events (unique! (sort! (uniq-by-mid-prefix "errorCode") eq?)))
     (for-each displayln events)))
 
 (def (match-key key)
-  (resolve-records (get-by-key key)))
+  (resolve-records (resolve-by-key key)))
 
-(def (se event)
-  (search-event event))
+(def (sn key)
+  (resolve-records (resolve-by-key (format "user:~a:" key))))
 
-(def (sr event)
-  (search-event event))
+(def (se key)
+  (resolve-records (resolve-by-key (format "event-name:~a:" key))))
 
-(def (sip event)
-  (search-event event))
-
-(def (sn event)
-  (search-event event))
-
-(def (sec event)
-  (search-event event))
+(def (sec key)
+  (resolve-records (resolve-by-key (format "errorCode:~a:" key))))
 
 ;; (def (lec)
 ;;   (list-index-entries "I-errors"))
