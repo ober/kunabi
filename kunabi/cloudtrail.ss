@@ -35,7 +35,6 @@
 
 (def version "0.08")
 
-
 (export #t)
 
 (def db-type leveldb:)
@@ -99,12 +98,14 @@
 
 (def (uniq-by-prefix key)
   (let ((itor (leveldb-iterator db)))
-    (leveldb-iterator-seek itor (format "~a" key))
+    (leveldb-iterator-seek itor (format "~a:" key))
     (let lp ((res '()))
       (if (leveldb-iterator-valid? itor)
         (if (pregexp-match key (bytes->string (leveldb-iterator-key itor)))
           (begin
-            (set! res (cons (nth 2 (pregexp-split ":" (bytes->string (leveldb-iterator-key itor)))) res))
+            (let (item (nth 1 (pregexp-split ":" (bytes->string (leveldb-iterator-key itor)))))
+              (unless (member item res)
+                (set! res (cons item res))))
             (leveldb-iterator-next itor)
             (lp res))
           res)
