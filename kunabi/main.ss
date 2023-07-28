@@ -50,7 +50,7 @@
    ("le" (hash (description: "List all event names. ") (usage: "le") (count: 0)))
    ("lec" (hash (description: "lec => List all Error Codes") (usage: "lec") (count: 0)))
    ("lip" (hash (description: "lip => List all source ips") (usage: "lip") (count: 0)))
-   ("ln" (hash (description: "ln => List all user names. ") (usage: "ln") (count: 0)))
+   ("list-users" (hash (description: "ln => List all user names. ") (usage: "ln") (count: 0)))
    ("lr" (hash (description: "lr => List all Regions") (usage: "lr") (count: 0)))
    ("ls" (hash (description: "ls => list all records") (usage: "ls") (count: 0)))
    ("lsv" (hash (description: "lsv => list all vpc records") (usage: "lsv") (count: 0)))
