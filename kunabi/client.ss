@@ -493,6 +493,38 @@
                   action
                   ))
 
+(def (inc-hash hashy key)
+  (dp (format "~a:~a" (hash->list hashy) key))
+  (if (hash-key? hashy key)
+    (hash-put! hashy key (+ 1 (hash-get hashy key)))
+    (hash-put! hashy key 1)))
+
+;; (def (summary key)
+;;   (let ((sum (hash))
+;;         (entries (hash-keys (db-get (format "I-~a" key)))))
+;;     (for (entry entries)
+;;       (if (db-key? (format "~a" entry))
+;;         (let ((row (db-get (format "~a" entry))))
+;;           (if (table? row)
+;;             (let-hash row
+;;               (dp (format "~a" (hash->list row)))
+;;               (inc-hash sum (get-val .event-name))
+;;               (inc-hash sum (get-val .event-type))
+;;               (inc-hash sum (get-val .user))
+;;               (inc-hash sum (get-val .source-ip-address))
+;;               (inc-hash sum (get-val .error-message))
+;;               (inc-hash sum (get-val .error-code))
+;;               (inc-hash sum (get-val .aws-region))
+;;               )))
+;;         (displayln "No index for " entry)))
+
+    ;; (display  (format " ~a: " key))
+    ;; (if (ip? key) (display (db-get (format "H-~a" key))))
+    ;; (hash-for-each
+    ;;  (lambda (k v)
+    ;;    (display (format " ~a:~a " k v)))
+    ;;  sum)))
+
 (def (process-row row)
   (dp (format "process-row: row: ~a" (hash->list row)))
   (let-hash row
@@ -526,59 +558,3 @@
       (when (string? .?errorCode)
         (db-batch (format "errorCode:~a:~a" .errorCode epoch) req-id))
       )))
-
-;; leveldb stuff
-
-(def (remove-leveldb key)
-  (dp (format "remove-leveldb: ~a" key)))
-
-(def (get-by-key key)
-  (let ((itor (leveldb-iterator db)))
-    (leveldb-iterator-seek itor (format "~a" key))
-    (let lp ((res '()))
-      (if (leveldb-iterator-valid? itor)
-        (if (pregexp-match key (bytes->string (leveldb-iterator-key itor)))
-          (begin
-            (set! res (cons (u8vector->object (leveldb-iterator-value itor)) res))
-            (leveldb-iterator-next itor)
-            (lp res))
-          res)
-        res))))
-
-(def (match-key key)
-  (resolve-records (get-by-key key)))
-
-(def (count-key key)
-  "Get a count of how many records are in db"
-  (let ((itor (leveldb-iterator db)))
-    (leveldb-iterator-seek-first itor)
-    (let lp ((count 0))
-      (leveldb-iterator-next itor)
-      (if (leveldb-iterator-valid? itor)
-        (begin
-          (if (pregexp-match key (bytes->string (leveldb-iterator-key itor)))
-            (begin
-              (displayln (format "Found one ~a" (bytes->string (leveldb-iterator-key itor))))
-              (lp (1+ count)))
-            (lp count)))
-        count))))
-
-(def (get-last-key)
-  "Get the last key for use in compaction"
-  (let ((itor (leveldb-iterator db)))
-    (leveldb-iterator-seek-last itor)
-    (let lp ()
-      (leveldb-iterator-prev itor)
-      (if (leveldb-iterator-valid? itor)
-        (bytes->string (leveldb-iterator-key itor))
-        (lp)))))
-
-(def (get-first-key)
-  "Get the last key for use in compaction"
-  (let ((itor (leveldb-iterator db)))
-    (leveldb-iterator-seek-first itor)
-    (let lp ()
-      (leveldb-iterator-next itor)
-      (if (leveldb-iterator-valid? itor)
-        (bytes->string (leveldb-iterator-key itor))
-        (lp)))))
