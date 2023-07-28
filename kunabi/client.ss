@@ -650,13 +650,6 @@
       ;; (add-to-index .awsRegion req-id))))
       )))
 
-;; (def (add-to-indexes i-hash)
-;;   (when (table? i-hash)
-;;     (hash-for-each
-;;      (lambda (k v)
-;;        (add-to-index k v))
-;;      i-hash)))
-
 (def (get-val-t val)
   (let ((res (get-val val)))
     (if (table? res)
