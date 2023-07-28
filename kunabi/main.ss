@@ -31,7 +31,7 @@
   :std/text/zlib
   :ober/oberlib
   :ober/kunabi/cloudtrail
-  :ober/kunabi/vpc
+;;  :ober/kunabi/vpc
   )
 
 (export main)
