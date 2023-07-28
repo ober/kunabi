@@ -45,7 +45,6 @@
 (def use-write-backs #t)
 
 (def hc-hash (make-hash-table))
-(def vpc-totals (make-hash-table))
 
 (def wb (db-init))
 (def db (db-open))
@@ -81,8 +80,6 @@
       (when (leveldb-iterator-valid? itor)
         (lp)))))
 
-(def (lvf file)
-  (read-vpc-file file))
 
 (def (se event)
   (search-event event))
@@ -133,8 +130,6 @@
 ;; (def (summaries)
 ;;   (summary-by-ip))
 
-(def (vpc file)
-  (load-vpc file))
 
 (def (ct file)
   (load-ct file))
@@ -284,36 +279,6 @@
      indices-hash)
     (displayln "indicies count total: " total)))
 
-;; (def (load-indices-hash)
-;;   "Load index hash"
-;;   (inc-hc)
-;;   (if (= (hash-length indices-hash) 0)
-;;     (let ((has-key (db-key? "INDICES")))
-;;       (displayln ">>--- Have INDICES " has-key)
-;;       (if has-key
-;; 	      (begin ;; load it up.
-;; 	        (dp (format "load-indices-hash records has no INDICES entry"))
-;; 	        (let ((indices2 (db-get "INDICES")))
-;;             (dp (hash->list indices2))
-;; 	          (for-each
-;; 	            (lambda (index)
-;;                 (displayln (format "index: ~a" index))
-;; 		            (let ((index-int (db-get index)))
-;; 		              (hash-put! indices-hash index index-int)))
-;; 	            indices2)))))
-;;     (displayln "No INDICES entry. skipping hash loading")))
-
-;; (def (flush-indices-hash)
-;;   (let ((indices (make-hash-table)))
-;;     (for (index (hash-keys indices-hash))
-;;       (dp (format "fih: index: ~a" index))
-;;       (db-batch (format "I-~a" index) (hash-get indices-hash index))
-;;       (hash-put! indices index #t))
-;;     (db-batch "INDICES" indices)))
-
-(def (flush-vpc-totals)
-  (for (cid (hash-keys vpc-totals))
-    (db-batch (format "~a" cid) (hash-get vpc-totals cid))))
 
 (def (count-index idx)
   (if (db-key? idx)
@@ -369,86 +334,7 @@
       (displayln "Could not find entry in indices-db for " look-for))))
 
 ;;;;;;;;;; vpc stuff
-(def (process-vpc-row row)
-  (with ([ date
-	         version
-	         account_id
-	         interface-id
-	         srcaddr
-	         dstaddr
-	         srcport
-	         dstport
-	         protocol
-	         packets
-	         bytez
-	         start
-	         end
-	         action
-	         status
-	         ] (string-split row #\space))
-    (let* ((convo (format "C-~a-~a-~a-~a-~a" srcaddr srcport dstaddr dstport protocol))
-	         (cid (memo-cid convo)))
-      (add-bytez cid bytez))))
 
-(def (add-bytez cid bytez)
-  (if (hash-key? vpc-totals cid)
-    (let ((total (hash-get vpc-totals cid))) ;; we have this key, let's update total
-      (hash-put! vpc-totals cid (+ (any->int total) (any->int bytez))))
-    (hash-put! vpc-totals cid bytez))) ;; new entry to be created and total
-
-(def (read-vpc-file file)
-  (let ((count 0)
-	      (bundle 100000)
-	      (btime 0)
-	      (etime 0))
-    (unless (file-already-processed? file)
-      (call-with-input-file file
-        (lambda (file-input)
-          (let ((data (time (bytes->string (uncompress file-input)))))
-            (for (row (string-split data #\newline))
-              (set! count (1+ count))
-              (if (= (modulo count bundle) 0)
-                (begin
-                  (set! etime (time->seconds (current-time)))
-                  (display #\return)
-                  (displayln (format "rps: ~a count:~a" (float->int (/ bundle (- etime btime))) count))
-                  (set! btime (time->seconds (current-time)))))
-              (process-vpc-row row))))))
-    count))
-
-(def (load-vpc dir)
-  (let ((rows 0)
-	      (btime 0)
-	      (total-count 0)
-	      (etime 0)
-        (files (find-files
-                dir
-                (lambda
-                    (filename)
-                  (and
-                    (equal? (path-extension filename) ".gz")
-                    (not (equal? (path-strip-directory filename) ".gz")))))))
-
-    (for (file files)
-      (displayln ".+")
-      (let* ((btime (time->seconds (current-time)))
-             (rows (read-vpc-file file))
-             (etime (time->seconds (current-time))))
-        (displayln "rows: " rows)
-        (set! total-count (+ total-count rows))
-        (set! files (+ files 1))
-        (mark-file-processed file)
-        (flush-vpc-totals)))
-    (flush-vpc-totals)
-    (db-write)
-    (db-close)
-    (displayln "Total: " total-count)))
-
-;; (def (summary-by-ip)
-;;   (let (summaries (sort! (hash-keys (db-get "I-source-ip-address")) eq?))
-;;     (for (sumation summaries)
-;;       (summary sumation)
-;;       (displayln ""))))
 
 (def (ip? x)
   (pregexp-match "^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}" x))
@@ -517,60 +403,12 @@
             (displayln "error: type :" type " not found in ui" (hash->str ui))))))
     username))
 
-(def vpc-fields '(
-                  bytez
-                  date
-                  dstaddr
-                  dstport
-                  endf
-                  interface-id
-                  packets
-                  protocol
-                  srcaddr
-                  srcport
-                  start
-                  status
-                  action
-                  ))
-
 (def (search-event-obj look-for)
   (let ((index-name (format "I-~a" look-for)))
     (if (db-key? index-name)
       (let ((matches (hash-keys (db-get index-name))))
         (resolve-records matches))
       (displayln "Could not find entry in indices-db for " look-for))))
-
-(def (inc-hash hashy key)
-  (dp (format "~a:~a" (hash->list hashy) key))
-  (if (hash-key? hashy key)
-    (hash-put! hashy key (+ 1 (hash-get hashy key)))
-    (hash-put! hashy key 1)))
-
-;; (def (summary key)
-;;   (let ((sum (hash))
-;;         (entries (hash-keys (db-get (format "I-~a" key)))))
-;;     (for (entry entries)
-;;       (if (db-key? (format "~a" entry))
-;;         (let ((row (db-get (format "~a" entry))))
-;;           (if (table? row)
-;;             (let-hash row
-;;               (dp (format "~a" (hash->list row)))
-;;               (inc-hash sum (get-val .event-name))
-;;               (inc-hash sum (get-val .event-type))
-;;               (inc-hash sum (get-val .user))
-;;               (inc-hash sum (get-val .source-ip-address))
-;;               (inc-hash sum (get-val .error-message))
-;;               (inc-hash sum (get-val .error-code))
-;;               (inc-hash sum (get-val .aws-region))
-;;               )))
-;;         (displayln "No index for " entry)))
-
-    ;; (display  (format " ~a: " key))
-    ;; (if (ip? key) (display (db-get (format "H-~a" key))))
-    ;; (hash-for-each
-    ;;  (lambda (k v)
-    ;;    (display (format " ~a:~a " k v)))
-    ;;  sum)))
 
 (def (process-row row)
   (dp (format "process-row: row: ~a" (hash->list row)))
@@ -732,18 +570,3 @@
   "Repair the db"
   (let ((db-dir (format "~a/kunabi-db/" (user-info-home (user-info (user-name))))))
     (leveldb-repair-db (format "~a/records" db-dir))))
-
-(def (memo-cid convo)
-  (let ((cid 0))
-    (if (hash-key? hc-hash convo)
-      (begin ;; we are a cache hit
-	      (set! cid (hash-get hc-hash convo)))
-      (begin ;; no hash entry
-	      (inc-hc)
-	      (db-batch convo HC)
-	      (db-batch (format "~a" HC) convo)
-	      ;;(displayln "HC is " HC)
-	      (set! cid HC)
-	      (hash-put! hc-hash convo cid)
-	      (hash-put! hc-hash cid convo)))
-    cid))

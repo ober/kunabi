@@ -30,7 +30,8 @@
   :std/text/yaml
   :std/text/zlib
   :ober/oberlib
-  :ober/kunabi/client
+  :ober/kunabi/cloudtrail
+  :ober/kunabi/vpc
   )
 
 (export main)
