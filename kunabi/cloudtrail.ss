@@ -80,6 +80,45 @@
       (when (leveldb-iterator-valid? itor)
         (lp)))))
 
+;; readers
+
+
+(def (get-by-key key)
+  (let ((itor (leveldb-iterator db)))
+    (leveldb-iterator-seek itor (format "~a" key))
+    (let lp ((res '()))
+      (if (leveldb-iterator-valid? itor)
+        (if (pregexp-match key (bytes->string (leveldb-iterator-key itor)))
+          (begin
+            (set! res (cons (u8vector->object (leveldb-iterator-value itor)) res))
+            (leveldb-iterator-next itor)
+            (lp res))
+          res)
+        res))))
+
+(def (uniq-by-prefix key)
+  (let ((itor (leveldb-iterator db)))
+    (leveldb-iterator-seek itor (format "~a" key))
+    (let lp ((res '()))
+      (if (leveldb-iterator-valid? itor)
+        (if (pregexp-match key (bytes->string (leveldb-iterator-key itor)))
+          (begin
+            (set! res (cons (nth 2 (pregexp-split ":" (bytes->string (leveldb-iterator-key itor)))) res))
+            (leveldb-iterator-next itor)
+            (lp res))
+          res)
+        res))))
+
+(def (ln)
+  (let (users (unique! (sort! (uniq-by-prefix "user") eq?)))
+    (for-each displayln users)))
+
+(def (lev)
+  (let (events (unique! (sort! (uniq-by-prefix "event-name") eq?)))
+    (for-each displayln events)))
+
+(def (match-key key)
+  (resolve-records (get-by-key key)))
 
 (def (se event)
   (search-event event))
@@ -96,8 +135,8 @@
 (def (sec event)
   (search-event event))
 
-(def (lec)
-  (list-index-entries "I-errors"))
+;; (def (lec)
+;;   (list-index-entries "I-errors"))
 
 (def (st)
   (displayln "Totals: "
@@ -112,24 +151,12 @@
 (def (read file)
   (read-ct-file file))
 
-(def (ln)
-  "List User names"
-  (list-index-entries "I-users"))
-
-(def (le)
-  "List Events"
-  (list-index-entries "I-events"))
-
-(def (lr)
-  "List regions"
-  (list-index-entries "I-aws-region"))
+;; (def (lr)
+;;   "List regions"
+;;   (list-index-entries "I-aws-region"))
 
 (def (source-ips)
   (list-source-ips))
-
-;; (def (summaries)
-;;   (summary-by-ip))
-
 
 (def (ct file)
   (load-ct file))
@@ -226,9 +253,6 @@
        (else #f))))
    (else str)))
 
-(def (getf field row)
-  (hash-get row field))
-
 (def (flush-all?)
   (dp (format "write-back-count && max-wb-size ~a ~a" write-back-count max-wb-size))
   (if (> write-back-count max-wb-size)
@@ -286,15 +310,15 @@
            (count (length entries)))
       count)))
 
-(def (list-index-entries idx)
-  (if (db-key? idx)
-    (let ((entries (hash-keys (db-get idx))))
-      (if (list? entries)
-	      (for-each displayln (sort! entries eq?))
-	      (begin
-	        (displayln "did not get list back from entries")
-	        (type-of entries))))
-    (displayln "no idx found for " idx)))
+;; (def (list-index-entries idx)
+;;   (if (db-key? idx)
+;;     (let ((entries (hash-keys (db-get idx))))
+;;       (if (list? entries)
+;; 	      (for-each displayln (sort! entries eq?))
+;; 	      (begin
+;; 	        (displayln "did not get list back from entries")
+;; 	        (type-of entries))))
+;;     (displayln "no idx found for " idx)))
 
 (def (resolve-records ids)
   (when (list? ids)
@@ -524,22 +548,6 @@
          (last (get-last-key)))
     (displayln "First: " first " Last: " last)
     (leveldb-compact-range db first last)))
-
-(def (get-by-key key)
-  (let ((itor (leveldb-iterator db)))
-    (leveldb-iterator-seek itor (format "~a" key))
-    (let lp ((res '()))
-      (if (leveldb-iterator-valid? itor)
-        (if (pregexp-match key (bytes->string (leveldb-iterator-key itor)))
-          (begin
-            (set! res (cons (u8vector->object (leveldb-iterator-value itor)) res))
-            (leveldb-iterator-next itor)
-            (lp res))
-          res)
-        res))))
-
-(def (match-key key)
-  (resolve-records (get-by-key key)))
 
 (def (count-key key)
   "Get a count of how many records are in db"
