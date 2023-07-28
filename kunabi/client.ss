@@ -105,6 +105,11 @@
 (def (st)
   (displayln "Totals: "
              " records: " (countdb)
+             " users: " (count-index "I-users")
+             " errors: " (count-index "I-errors")
+             " regions: " (count-index "I-aws-region")
+             " events: " (count-index "I-events")
+             " files: " (count-index "I-files")
              ))
 
 (def (read file)
@@ -279,6 +284,33 @@
      indices-hash)
     (displayln "indicies count total: " total)))
 
+;; (def (load-indices-hash)
+;;   "Load index hash"
+;;   (inc-hc)
+;;   (if (= (hash-length indices-hash) 0)
+;;     (let ((has-key (db-key? "INDICES")))
+;;       (displayln ">>--- Have INDICES " has-key)
+;;       (if has-key
+;; 	      (begin ;; load it up.
+;; 	        (dp (format "load-indices-hash records has no INDICES entry"))
+;; 	        (let ((indices2 (db-get "INDICES")))
+;;             (dp (hash->list indices2))
+;; 	          (for-each
+;; 	            (lambda (index)
+;;                 (displayln (format "index: ~a" index))
+;; 		            (let ((index-int (db-get index)))
+;; 		              (hash-put! indices-hash index index-int)))
+;; 	            indices2)))))
+;;     (displayln "No INDICES entry. skipping hash loading")))
+
+;; (def (flush-indices-hash)
+;;   (let ((indices (make-hash-table)))
+;;     (for (index (hash-keys indices-hash))
+;;       (dp (format "fih: index: ~a" index))
+;;       (db-batch (format "I-~a" index) (hash-get indices-hash index))
+;;       (hash-put! indices index #t))
+;;     (db-batch "INDICES" indices)))
+
 (def (flush-vpc-totals)
   (for (cid (hash-keys vpc-totals))
     (db-batch (format "~a" cid) (hash-get vpc-totals cid))))
@@ -327,6 +359,14 @@
 	      (let ((lookup-name (host-info-name lookup)))
 	        lookup-name)))
     ip))
+
+(def (search-event look-for)
+  (dp (format "look-for: ~a" look-for))
+  (let ((index-name (format "I-~a" look-for)))
+    (if (db-key? index-name)
+      (let ((matches (hash-keys (db-get index-name))))
+	      (resolve-records matches))
+      (displayln "Could not find entry in indices-db for " look-for))))
 
 ;;;;;;;;;; vpc stuff
 (def (process-vpc-row row)
@@ -493,6 +533,13 @@
                   action
                   ))
 
+(def (search-event-obj look-for)
+  (let ((index-name (format "I-~a" look-for)))
+    (if (db-key? index-name)
+      (let ((matches (hash-keys (db-get index-name))))
+        (resolve-records matches))
+      (displayln "Could not find entry in indices-db for " look-for))))
+
 (def (inc-hash hashy key)
   (dp (format "~a:~a" (hash->list hashy) key))
   (if (hash-key? hashy key)
@@ -558,3 +605,145 @@
       (when (string? .?errorCode)
         (db-batch (format "errorCode:~a:~a" .errorCode epoch) req-id))
       )))
+
+;; db stuff
+
+(def (db-batch key value)
+  (unless (string? key) (dp (format "key: ~a val: ~a" (type-of key) (type-of value))))
+  (leveldb-writebatch-put wb key (object->u8vector value)))
+
+(def (db-put key value)
+  (dp (format "<----> db-put: key: ~a val: ~a" key value))
+  (leveldb-put db key (object->u8vector value)))
+
+(def (ensure-db)
+  (unless db
+    (set! db (db-open))))
+
+(def (db-open)
+  (dp ">-- db-open")
+  (let ((db-dir (or (getenv "kunabidb" #f) (format "~a/kunabi-db/" (user-info-home (user-info (user-name)))))))
+    (dp (format "db-dir is ~a" db-dir))
+    (unless (file-exists? db-dir)
+      (create-directory* db-dir))
+    (let ((location (format "~a/records" db-dir)))
+      (leveldb-open location (leveldb-options
+                              paranoid-checks: #t
+                              max-open-files: (def-num (getenv "k_max_files" #f))
+                              bloom-filter-bits: (def-num (getenv "k_bloom_bits" #f))
+                              compression: #t
+                              block-size: (def-num (getenv "k_block_size" #f))
+                              write-buffer-size: (def-num (getenv "k_write_buffer" (* 1024 1024 16)))
+                              lru-cache-capacity: (def-num (getenv "k_lru_cache" 10000)))))))
+
+(def (def-num num)
+  (if (string? num)
+    (string->number num)
+    num))
+
+(def (db-get key)
+  (dp (format "db-get: ~a" key))
+  (let ((ret (leveldb-get db (format "~a" key))))
+    (if (u8vector? ret)
+      (u8vector->object ret)
+      "N/A")))
+
+(def (db-key? key)
+  (dp (format ">-- db-key? with ~a" key))
+  (leveldb-key? db (format "~a" key)))
+
+(def (db-write)
+  (dp "in db-write")
+  (leveldb-write db wb))
+
+(def (db-close)
+  (dp "in db-close")
+  (leveldb-close db))
+
+(def (db-init)
+  (dp "in db-init")
+  (leveldb-writebatch))
+
+;; leveldb stuff
+(def (get-leveldb key)
+  (displayln "get-leveldb: " key)
+  (try
+   (let* ((bytes (leveldb-get db (format "~a" key)))
+          (val (if (u8vector? bytes)
+                 (u8vector->object bytes)
+                 nil)))
+     val)
+   (catch (e)
+     (raise e))))
+
+(def (remove-leveldb key)
+  (dp (format "remove-leveldb: ~a" key)))
+
+(def (compact)
+  "Compact some stuff"
+  (let* ((itor (leveldb-iterator db))
+         (first (get-first-key))
+         (last (get-last-key)))
+    (displayln "First: " first " Last: " last)
+    (leveldb-compact-range db first last)))
+
+(def (get-by-key key)
+  (let ((itor (leveldb-iterator db)))
+    (leveldb-iterator-seek itor (format "~a" key))
+    (let lp ((res '()))
+      (if (leveldb-iterator-valid? itor)
+        (if (pregexp-match key (bytes->string (leveldb-iterator-key itor)))
+          (begin
+            (set! res (cons (u8vector->object (leveldb-iterator-value itor)) res))
+            (leveldb-iterator-next itor)
+            (lp res))
+          res)
+        res))))
+
+(def (match-key key)
+  (resolve-records (get-by-key key)))
+
+(def (count-key key)
+  "Get a count of how many records are in db"
+  (let ((itor (leveldb-iterator db)))
+    (leveldb-iterator-seek-first itor)
+    (let lp ((count 0))
+      (leveldb-iterator-next itor)
+      (if (leveldb-iterator-valid? itor)
+        (begin
+          (if (pregexp-match key (bytes->string (leveldb-iterator-key itor)))
+            (begin
+              (displayln (format "Found one ~a" (bytes->string (leveldb-iterator-key itor))))
+              (lp (1+ count)))
+            (lp count)))
+        count))))
+
+(def (countdb)
+  "Get a count of how many records are in db"
+  (let ((itor (leveldb-iterator db)))
+    (leveldb-iterator-seek-first itor)
+    (let lp ((count 1))
+      (leveldb-iterator-next itor)
+      (if (leveldb-iterator-valid? itor)
+        (lp (1+ count))
+        count))))
+
+(def (repairdb)
+  "Repair the db"
+  (let ((db-dir (format "~a/kunabi-db/" (user-info-home (user-info (user-name))))))
+    (leveldb-repair-db (format "~a/records" db-dir))))
+
+(def (memo-cid convo)
+  (let ((cid 0))
+    (if (hash-key? hc-hash convo)
+      (begin ;; we are a cache hit
+	      (set! cid (hash-get hc-hash convo)))
+      (begin ;; no hash entry
+	      (inc-hc)
+	      (db-batch convo HC)
+	      (db-batch (format "~a" HC) convo)
+	      ;;(displayln "HC is " HC)
+	      (set! cid HC)
+	      (hash-put! hc-hash convo cid)
+	      (hash-put! hc-hash cid convo)))
+    cid))
