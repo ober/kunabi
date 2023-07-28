@@ -113,7 +113,7 @@
 
 (def (ln)
   (let (users (unique! (sort! (uniq-by-prefix "user") eq?)))
-    (for-each displayln users)))
+    (for-each displayln (reverse users))))
 
 (def (lev)
   (let (events (unique! (sort! (uniq-by-prefix "event-name") eq?)))
