@@ -661,7 +661,7 @@
              (event-type .?eventType)
              (recipient-account-id .?recipientAccountId)
              (request-parameters .?requestParameters)
-;;             (user user)
+             (user user)
              (response-elements .?responseElements)
              (source-ip-address .?sourceIPAddress)
              (user-agent .?userAgent)
@@ -669,8 +669,8 @@
 
       (set! write-back-count (+ write-back-count 1))
       (db-batch req-id h)
-      (db-batch (format "~a|~a" user event-time) req-id)
-      (db-batch (format "~a|~a" event-name event-time) req-id)
+      (db-batch (format "~a|~a" user .?eventTime) req-id)
+      (db-batch (format "~a|~a" .?event-name .?eventTime) req-id)
 
       ;; (when (string? .?errorCode)
       ;;   (add-to-index "errors" .?errorCode)
