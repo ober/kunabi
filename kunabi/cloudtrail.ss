@@ -33,7 +33,8 @@
 
 (declare (not optimize-dead-definitions))
 
-(def version "0.07")
+(def version "0.08")
+
 
 (export #t)
 
