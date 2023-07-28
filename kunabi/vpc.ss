@@ -42,9 +42,9 @@
 
 (def (read-vpc-file file)
   (let ((count 0)
-	      (bundle 100000)
-	      (btime 0)
-	      (etime 0))
+	    (bundle 100000)
+	    (btime 0)
+	    (etime 0))
     (unless (file-already-processed? file)
       (call-with-input-file file
         (lambda (file-input)
@@ -62,9 +62,9 @@
 
 (def (load-vpc dir)
   (let ((rows 0)
-	      (btime 0)
-	      (total-count 0)
-	      (etime 0)
+	    (btime 0)
+	    (total-count 0)
+	    (etime 0)
         (files (find-files
                 dir
                 (lambda
@@ -100,23 +100,23 @@
 
 (def (process-vpc-row row)
   (with ([ date
-	         version
-	         account_id
-	         interface-id
-	         srcaddr
-	         dstaddr
-	         srcport
-	         dstport
-	         protocol
-	         packets
-	         bytez
-	         start
-	         end
-	         action
-	         status
-	         ] (string-split row #\space))
+	       version
+	       account_id
+	       interface-id
+	       srcaddr
+	       dstaddr
+	       srcport
+	       dstport
+	       protocol
+	       packets
+	       bytez
+	       start
+	       end
+	       action
+	       status
+	       ] (string-split row #\space))
     (let* ((convo (format "C-~a-~a-~a-~a-~a" srcaddr srcport dstaddr dstport protocol))
-	         (cid (memo-cid convo)))
+	       (cid (memo-cid convo)))
       (add-bytez cid bytez))))
 
 (def vpc-fields '(
@@ -134,3 +134,18 @@
                   status
                   action
                   ))
+
+(def (memo-cid convo)
+  (let ((cid 0))
+    (if (hash-key? hc-hash convo)
+      (begin ;; we are a cache hit
+        (set! cid (hash-get hc-hash convo)))
+      (begin ;; no hash entry
+        (inc-hc)
+        (db-batch convo HC)
+        (db-batch (format "~a" HC) convo)
+        ;;(displayln "HC is " HC)
+        (set! cid HC)
+        (hash-put! hc-hash convo cid)
+        (hash-put! hc-hash cid convo)))
+    cid))
