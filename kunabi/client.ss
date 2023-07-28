@@ -373,20 +373,20 @@
   (when (list? ids)
     (let ((outs [[ "Date" "Name" "User" "Source" "Hostname" "Type" "Request" "User Agent" "Error Code" "Error Message" ]]))
       (for (id ids)
-        (let ((id2 (get-val id)))
+        (let ((id2 (db-get id)))
           (when (table? id2)
             (let-hash id2
               (set! outs (cons [
-                                .?event-time
-		                            (get-val-t .?event-name)
-		                            (get-val-t .?user)
-		                            (get-val-t .?event-source)
-		                            (get-val-t .?source-ip-address)
-		                            (get-val-t .?event-type)
-		                            (get-val-t .?request-parameters)
-		                            (get-val-t .?user-agent)
-		                            (get-val-t .?error-code)
-		                            (get-val-t .?error-message)
+                                .?time
+		                            .?en
+		                            .?user
+		                            .?es
+		                            .?sia
+		                            .?et
+		                            .?rp
+		                            .?ua
+		                            .?ec
+		                            .?em
                                 ] outs))))))
       (style-output outs "org-mode"))))
 
@@ -616,26 +616,26 @@
          (req-id (or .?requestID .?eventID))
          (epoch (date->epoch2 .?eventTime))
          (h (hash
-             (aws-region .?awsRegion)
-             (error-code .?errorCode)
-             (error-message .?errorMessage)
-             (event-id .?eventID)
-;;             (event-name  .?eventName)
-             (event-source .?eventSource)
-;;             (event-time .?eventTime)
-             (event-type .?eventType)
-             (recipient-account-id .?recipientAccountId)
-             (request-parameters .?requestParameters)
-;;             (user user)
-             (response-elements .?responseElements)
-             (source-ip-address .?sourceIPAddress)
-             (user-agent .?userAgent)
-             (user-identity .?userIdentity))))
+             (ar .?awsRegion)
+             (ec .?errorCode)
+             (em .?errorMessage)
+             (eid .?eventID)
+             (en  .?eventName)
+             (es .?eventSource)
+             (time .?eventTime)
+             (et .?eventType)
+             (rid .?recipientAccountId)
+             (rp .?requestParameters)
+             (user user)
+             (re .?responseElements)
+             (sia .?sourceIPAddress)
+             (ua .?userAgent)
+             (ui .?userIdentity))))
 
       (set! write-back-count (+ write-back-count 1))
       (db-batch req-id h)
-      (db-batch (format "user|~a|~a" user epoch) req-id)
-      (db-batch (format "event-name|~a|~a" .?event-name epoch) req-id)
+      (db-batch (format "user:~a:~a" user epoch) req-id)
+      (db-batch (format "event-name:~a:~a" .?eventName epoch) req-id)
 
       ;; (when (string? .?errorCode)
       ;;   (add-to-index "errors" .?errorCode)
@@ -749,14 +749,16 @@
     (leveldb-iterator-seek itor (format "~a" key))
     (let lp ((res '()))
       (if (leveldb-iterator-valid? itor)
-        (begin
-          (set! res (cons (leveldb-iterator-value itor) res))
-          (leveldb-iterator-next itor)
-          (lp res))
+        (if (pregexp-match key (bytes->string (leveldb-iterator-key itor)))
+          (begin
+            (set! res (cons (u8vector->object (leveldb-iterator-value itor)) res))
+            (leveldb-iterator-next itor)
+            (lp res))
+          res)
         res))))
 
 (def (match-key key)
-  (for-each displayln (get-by-key key)))
+  (resolve-records (get-by-key key)))
 
 (def (count-key key)
   "Get a count of how many records are in db"
@@ -768,7 +770,7 @@
         (begin
           (if (pregexp-match key (bytes->string (leveldb-iterator-key itor)))
             (begin
-              (displayln "Found one ~a" (bytes->string (leveldb-iterator-key itor)))
+              (displayln (format "Found one ~a" (bytes->string (leveldb-iterator-key itor))))
               (lp (1+ count)))
             (lp count)))
         count))))
