@@ -73,8 +73,11 @@
     (leveldb-iterator-seek-first itor)
     (let lp ()
       (leveldb-iterator-next itor)
-      (displayln (format "k: ~a"
-                         (bytes->string (leveldb-iterator-key itor))))
+      (let ((key (bytes->string (leveldb-iterator-key itor)))
+            (val (u8vector->object (leveldb-iterator-value itor))))
+        (if (table? val)
+          (displayln (format "k: ~a v: ~a" key (hash->list val)))
+          (displayln (format "k: ~a v: ~a" key val))))
       (when (leveldb-iterator-valid? itor)
         (lp)))))
 
@@ -171,45 +174,6 @@
   (let* ((short (get-short file))
          (seen (db-key? (format "F-~a" short))))
     seen))
-
-;; (def (add-to-index index entry)
-;;   "Add entry to index"
-;;   (dp (format "in add-to-index index: ~a entry: ~a" index entry))
-;;   (let ((index-in-global-hash? (hash-key? indices-hash index)))
-;;     (dp (format  "index-in-global-hash? ~a ~a" index-in-global-hash? index))
-;;     (if index-in-global-hash?
-;;       (new-index-entry index entry)
-;;       (begin
-;; 	      (dp (format "ati: index not in global hash for ~a. adding" index))
-;; 	      (hash-put! indices-hash index (hash))
-;; 	      (let ((have-db-entry-for-index (db-key? (format "I-~a" index))))
-;; 	        (dp (format "have-db-entry-for-index: ~a key: I-~a" have-db-entry-for-index index))
-;; 	        (if have-db-entry-for-index
-;; 	          (update-db-index index entry)
-;; 	          (new-db-index index entry)))))))
-
-;; (def (new-index-entry index entry)
-;;   "Add entry to index in global hash"
-;;   (dp (format "new-index-entry: ~a ~a" index entry))
-;;   (unless (hash-key? (hash-get indices-hash index) entry)
-;;     (hash-put! (hash-get indices-hash index) entry #t)))
-
-;; (def (new-db-index index entry)
-;;   "New index, with entry to db"
-;;   (dp (format "new-db-index: ~a ~a" index entry))
-;;   (let ((current (make-hash-table)))
-;;     (hash-put! current entry #t)
-;;     (hash-put! indices-hash index current)
-;;     (db-batch (format "I-~a" index) current)))
-
-;; (def (update-db-index index entry)
-;;   "Fetch the index from db, then add our new entry, and save."
-;;   (dp (format "update-db-index: ~a ~a" index entry))
-;;   (let ((current (db-get (format "I-~a" index))))
-;;     (hash-put! current entry #t)
-;;     (hash-put! indices-hash index current)
-;;     (dp (format "- ~a:~a length hash: ~a" index entry (hash-length current)))
-;;     (format "I-~a" index) current))
 
 (def (mark-file-processed file)
   (dp "in mark-file-processed")
@@ -650,6 +614,7 @@
     (let*
         ((user (find-user .?userIdentity))
          (req-id (or .?requestID .?eventID))
+         (epoch (date->epoch2 .?eventTime))
          (h (hash
              (aws-region .?awsRegion)
              (error-code .?errorCode)
@@ -669,8 +634,8 @@
 
       (set! write-back-count (+ write-back-count 1))
       (db-batch req-id h)
-      (db-batch (format "~a|~a" user .?eventTime) req-id)
-      (db-batch (format "~a|~a" .?event-name .?eventTime) req-id)
+      (db-batch (format "user|~a|~a" user epoch) req-id)
+      (db-batch (format "event-name|~a|~a" .?event-name epoch) req-id)
 
       ;; (when (string? .?errorCode)
       ;;   (add-to-index "errors" .?errorCode)
@@ -779,16 +744,32 @@
     (displayln "First: " first " Last: " last)
     (leveldb-compact-range db first last)))
 
-(def (count-by-key key)
+(def (get-by-key key)
+  (let ((itor (leveldb-iterator db)))
+    (leveldb-iterator-seek itor (format "~a" key))
+    (let lp ((res '()))
+      (if (leveldb-iterator-valid? itor)
+        (begin
+          (set! res (cons (leveldb-iterator-value itor) res))
+          (leveldb-iterator-next itor)
+          (lp res))
+        res))))
+
+(def (match-key key)
+  (for-each displayln (get-by-key key)))
+
+(def (count-key key)
   "Get a count of how many records are in db"
   (let ((itor (leveldb-iterator db)))
     (leveldb-iterator-seek-first itor)
-    (let lp ((count 1))
+    (let lp ((count 0))
       (leveldb-iterator-next itor)
       (if (leveldb-iterator-valid? itor)
         (begin
           (if (pregexp-match key (bytes->string (leveldb-iterator-key itor)))
-            (lp (1+ count))
+            (begin
+              (displayln "Found one ~a" (bytes->string (leveldb-iterator-key itor)))
+              (lp (1+ count)))
             (lp count)))
         count))))
 
