@@ -234,44 +234,6 @@
 (def (getf field row)
   (hash-get row field))
 
-(def (get-val hcn)
-  "Dereference if a valid key in db. otherwise return"
-  (dp (format "get-val: ~a string?:~a number?~a" hcn (string? hcn) (number? hcn)))
-  (let* ((ret "N/A")
-         (hcn-safe (format "~a" hcn)))
-    (cond
-     ((table? hcn)
-      (set! ret hcn))
-     ((void? hcn)
-      (set! ret 0))
-     ((and (string=? "0" hcn-safe))
-      (dp "hcn is 0")
-      (set! ret "0"))
-     ((db-key? hcn-safe)
-      (let ((db-val (db-get hcn-safe)))
-        (dp (format "db-val: ~a ~a" db-val hcn-safe) )
-        (set! ret db-val)
-        ))
-     (else
-      (dp (format "get-val: unknown hcn pattern: ~a" hcn-safe))))
-    ret))
-
-(def (add-val val)
-  (unless (string? val)
-    val)
-  (when (string? val)
-    (dp (format "add-val: ~a" val))
-    (let ((seen (db-key? val))
-          (hcn 0))
-      (if seen
-        (set! hcn (db-get val))
-        (begin
-          (inc-hc)
-          (set! hcn HC)
-          (db-put val HC)
-          (db-put (format "~a" HC) val)))
-      hcn)))
-
 (def (flush-all?)
   (dp (format "write-back-count && max-wb-size ~a ~a" write-back-count max-wb-size))
   (if (> write-back-count max-wb-size)
@@ -538,7 +500,9 @@
                       (let-hash
                           .?sessionIssuer
                         (set! username .userName)))))
-                (set! username .principalId))) ;; not found go with this for now.
+                (begin
+                  (displayln (format "Fall thru find-user ~a~%" (hash->list ui)))
+                  (set! username .principalId)))) ;; not found go with this for now.
              ((string=? "AWSService" type)
               (set! username (hash-get ui 'invokedBy)))
              ((string=? "Root" type)
@@ -582,31 +546,31 @@
     (hash-put! hashy key (+ 1 (hash-get hashy key)))
     (hash-put! hashy key 1)))
 
-(def (summary key)
-  (let ((sum (hash))
-        (entries (hash-keys (db-get (format "I-~a" key)))))
-    (for (entry entries)
-      (if (db-key? (format "~a" entry))
-        (let ((row (db-get (format "~a" entry))))
-          (if (table? row)
-            (let-hash row
-              (dp (format "~a" (hash->list row)))
-              (inc-hash sum (get-val .event-name))
-              (inc-hash sum (get-val .event-type))
-              (inc-hash sum (get-val .user))
-              (inc-hash sum (get-val .source-ip-address))
-              (inc-hash sum (get-val .error-message))
-              (inc-hash sum (get-val .error-code))
-              (inc-hash sum (get-val .aws-region))
-              )))
-        (displayln "No index for " entry)))
+;; (def (summary key)
+;;   (let ((sum (hash))
+;;         (entries (hash-keys (db-get (format "I-~a" key)))))
+;;     (for (entry entries)
+;;       (if (db-key? (format "~a" entry))
+;;         (let ((row (db-get (format "~a" entry))))
+;;           (if (table? row)
+;;             (let-hash row
+;;               (dp (format "~a" (hash->list row)))
+;;               (inc-hash sum (get-val .event-name))
+;;               (inc-hash sum (get-val .event-type))
+;;               (inc-hash sum (get-val .user))
+;;               (inc-hash sum (get-val .source-ip-address))
+;;               (inc-hash sum (get-val .error-message))
+;;               (inc-hash sum (get-val .error-code))
+;;               (inc-hash sum (get-val .aws-region))
+;;               )))
+;;         (displayln "No index for " entry)))
 
-    (display  (format " ~a: " key))
-    (if (ip? key) (display (db-get (format "H-~a" key))))
-    (hash-for-each
-     (lambda (k v)
-       (display (format " ~a:~a " k v)))
-     sum)))
+    ;; (display  (format " ~a: " key))
+    ;; (if (ip? key) (display (db-get (format "H-~a" key))))
+    ;; (hash-for-each
+    ;;  (lambda (k v)
+    ;;    (display (format " ~a:~a " k v)))
+    ;;  sum)))
 
 (def (process-row row)
   (dp (format "process-row: row: ~a" (hash->list row)))
