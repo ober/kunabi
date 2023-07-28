@@ -79,7 +79,7 @@
       (unless (= (length args2) count)
 	(usage-verb verb))
       (apply (eval (string->symbol (string-append "ober/kunabi/cloudtrail#" verb))) args2)))
-  (db-close)
+  ;;(db-close)
   )
 
 (def (usage-verb verb)

@@ -115,8 +115,12 @@
   (let (users (unique! (sort! (uniq-by-prefix "user") eq?)))
     (for-each displayln (reverse users))))
 
-(def (lev)
+(def (le)
   (let (events (unique! (sort! (uniq-by-prefix "event-name") eq?)))
+    (for-each displayln (reverse events))))
+
+(def (lec)
+  (let (events (unique! (sort! (uniq-by-prefix "errorCode") eq?)))
     (for-each displayln events)))
 
 (def (match-key key)
