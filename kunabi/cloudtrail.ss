@@ -120,7 +120,7 @@
 
 (def (lec)
   (let (events (unique! (sort! (uniq-by-mid-prefix "errorCode") eq?)))
-    (for-each displayln events)))
+    (for-each displayln (reverse events))))
 
 (def (match-key key)
   (resolve-records (resolve-by-key key)))
