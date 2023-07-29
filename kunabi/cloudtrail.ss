@@ -134,8 +134,6 @@
 (def (sec key)
   (resolve-records (resolve-by-key (format "errorCode:~a:" key))))
 
-;; (def (lec)
-;;   (list-index-entries "I-errors"))
 
 (def (st)
   (displayln "Totals: "
