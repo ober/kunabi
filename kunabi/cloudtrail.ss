@@ -97,12 +97,12 @@
 
 (def (uniq-by-mid-prefix key)
   (let ((itor (leveldb-iterator db)))
-    (leveldb-iterator-seek itor (format "~a:" key))
+    (leveldb-iterator-seek itor (format "~a#" key))
     (let lp ((res '()))
       (if (leveldb-iterator-valid? itor)
         (if (pregexp-match key (bytes->string (leveldb-iterator-key itor)))
           (begin
-            (let (item (nth 1 (pregexp-split ":" (bytes->string (leveldb-iterator-key itor)))))
+            (let (item (nth 1 (pregexp-split "#" (bytes->string (leveldb-iterator-key itor)))))
               (unless (member item res)
                 (set! res (cons item res))))
             (leveldb-iterator-next itor)
@@ -115,7 +115,7 @@
     (for-each displayln (reverse users))))
 
 (def (le)
-  (let (events (unique! (sort! (uniq-by-mid-prefix "event-name") eq?)))
+  (let (events (unique! (sort! (uniq-by-mid-prefix "eventName") eq?)))
     (for-each displayln (reverse events))))
 
 (def (lec)
@@ -126,13 +126,13 @@
   (resolve-records (resolve-by-key key)))
 
 (def (sn key)
-  (resolve-records (resolve-by-key (format "user:~a:" key))))
+  (resolve-records (resolve-by-key (format "user#~a#" key))))
 
 (def (se key)
-  (resolve-records (resolve-by-key (format "event-name:~a:" key))))
+  (resolve-records (resolve-by-key (format "eventName#~a#" key))))
 
 (def (sec key)
-  (resolve-records (resolve-by-key (format "errorCode:~a:" key))))
+  (resolve-records (resolve-by-key (format "errorCode#~a#" key))))
 
 
 (def (st)
@@ -331,7 +331,7 @@
 		                            .?es
 		                            .?sia
 		                            .?et
-		                            .?rp
+		                            (if (table? .?rp) (hash->list .?rp) .?rp)
 		                            .?ua
 		                            .?ec
 		                            .?em
@@ -458,11 +458,11 @@
       (set! write-back-count (+ write-back-count 1))
       (db-batch req-id h)
       (when (string? user)
-        (db-batch (format "user:~a:~a" user epoch) req-id))
+        (db-batch (format "user#~a#~a" user epoch) req-id))
       (when (string? .?eventName)
-        (db-batch (format "event-name:~a:~a" .?eventName epoch) req-id))
+        (db-batch (format "eventName#~a#~a" .?eventName epoch) req-id))
       (when (string? .?errorCode)
-        (db-batch (format "errorCode:~a:~a" .errorCode epoch) req-id))
+        (db-batch (format "errorCode#~a#~a" .errorCode epoch) req-id))
       )))
 
 ;; db stuff
