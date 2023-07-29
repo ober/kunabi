@@ -51,7 +51,7 @@
 
 (def HC 0)
 (def write-back-count 0)
-(def max-wb-size (def-num (getenv "k_max_wb" 100000)))
+(def max-wb-size (def-num (getenv "k_max_wb" 1000000)))
 (def tmax (def-num (getenv "tmax" 12)))
 (def indices-hash (make-hash-table))
 
@@ -133,7 +133,6 @@
 
 (def (sec key)
   (resolve-records (resolve-by-key (format "errorCode#~a#" key))))
-
 
 (def (st)
   (displayln "Totals: "
@@ -256,6 +255,7 @@
     (begin
       (displayln "writing.... " write-back-count)
       (leveldb-write db wb)
+      (compact)
       (set! write-back-count 0))))
 
 (def (get-last-key)
