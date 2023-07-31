@@ -282,18 +282,6 @@
         (bytes->string (leveldb-iterator-key itor))
         (lp)))))
 
-(def (get-next-id max)
-  (let ((maxid (1+ max)))
-    (if (db-key? (format "~a" maxid))
-      (get-next-id (* 2 maxid))
-      maxid)))
-
-(def (inc-hc)
-  "increment HC to next free id."
-  (let ((next (get-next-id HC)))
-    (set! HC next)
-    (db-batch "HC" (format "~a" HC))))
-
 (def (indices-report)
   (let ((total 0))
     (hash-for-each
