@@ -100,14 +100,14 @@
     (leveldb-iterator-seek itor (format "~a#" key))
     (let lp ((res '()))
       (if (leveldb-iterator-valid? itor)
-        (if (pregexp-match key (bytes->string (leveldb-iterator-key itor)))
-          (begin
-            (let (item (nth 1 (pregexp-split "#" (bytes->string (leveldb-iterator-key itor)))))
-              (unless (member item res)
-                (set! res (cons item res))))
-            (leveldb-iterator-next itor)
-            (lp res))
-          res)
+        (let ((k (bytes->string (leveldb-iterator-key itor))))
+          (if (pregexp-match key k)
+            (let ((mid (nth 1 (pregexp-split "#" k))))
+              (unless (member mid res)
+                (set! res (cons mid res)))
+              (leveldb-iterator-next itor)
+              (lp res))
+              res))
         res))))
 
 (def (ln)
@@ -209,6 +209,7 @@
 
 (def (read-ct-file file)
   (ensure-db)
+  (##gc)
   (dp (format "read-ct-file: ~a" file))
   (unless (file-already-processed? file)
     (let ((btime (time->seconds (current-time)))
@@ -409,7 +410,7 @@
                         (set! username .userName)))))
                 (begin
                   (displayln (format "Fall thru find-user ~a~%" (hash->list ui)))
-                  (set! username .principalId)))) ;; not found go with this for now.
+                  (set! username (cdr (pregexp-split ":" .principalId)))))) ;; not found go with this for now.
              ((string=? "AWSService" type)
               (set! username (hash-get ui 'invokedBy)))
              ((string=? "Root" type)
