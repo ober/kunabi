@@ -110,29 +110,36 @@
               res))
         res))))
 
+(def (sort-uniq-reverse lst)
+  (for-each
+    (lambda (item)
+      (displayln item))
+    (reverse (unique! (sort! lst eq?)))))
+
+
 (def (ln)
-  (let (users (unique! (sort! (uniq-by-mid-prefix "user") eq?)))
-    (for-each displayln (reverse users))))
+  (sort-uniq-reverse
+   (uniq-by-mid-prefix "user")))
 
 (def (le)
-  (let (events (unique! (sort! (uniq-by-mid-prefix "eventName") eq?)))
-    (for-each displayln (reverse events))))
+  (sort-uniq-reverse
+   (uniq-by-mid-prefix "eventName")))
 
 (def (lec)
-  (let (events (unique! (sort! (uniq-by-mid-prefix "errorCode") eq?)))
-    (for-each displayln (reverse events))))
+  (sort-uniq-reverse
+   (uniq-by-mid-prefix "errorCode")))
 
 (def (match-key key)
   (resolve-records (resolve-by-key key)))
 
 (def (sn key)
-  (resolve-records (resolve-by-key (format "user#~a#" key))))
+  (match-key (format "user#~a#" key)))
 
 (def (se key)
-  (resolve-records (resolve-by-key (format "eventName#~a#" key))))
+  (match-key (format "eventName#~a#" key)))
 
 (def (sec key)
-  (resolve-records (resolve-by-key (format "errorCode#~a#" key))))
+  (match-key (format "errorCode#~a#" key)))
 
 (def (st)
   (displayln "Totals: "
@@ -146,10 +153,6 @@
 
 (def (read file)
   (read-ct-file file))
-
-;; (def (lr)
-;;   "List regions"
-;;   (list-index-entries "I-aws-region"))
 
 (def (source-ips)
   (list-source-ips))
