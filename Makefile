@@ -19,7 +19,7 @@ linux-static-docker:
 	docker run -it \
 	-e GERBIL_PATH=/src/.gerbil \
 	-u "$(UID):$(GID)" \
-    -v $(PWD):/src:z \
+        -v $(PWD):/src:z \
 	$(DOCKER_IMAGE) \
 	make -C /src linux-static
 
@@ -28,7 +28,7 @@ linux-static: build
 	-cc-options "-Bstatic" \
 	-ld-options "-static -lpthread -L/usr/lib/x86_64-linux-gnu -lleveldb -lssl -ldl -lyaml -lz -lstdc++" \
 	-prelude "(declare (not safe))" \
-	-exe $(PROJECT)/$(PROJECT).ss
+	-exe $(PROJECT)/main.ss
 
 clean:
 	rm -Rf $(PROJECT)-bin
