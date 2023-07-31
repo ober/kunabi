@@ -26,7 +26,7 @@ linux-static-docker:
 linux-static: build
 	$(GERBIL_HOME)/bin/gxc -o $(PROJECT)-bin -static -O \
 	-cc-options "-Bstatic" \
-	-ld-options "-static -lpthread -L/usr/lib/x86_64-linux-gnu -lleveldb -lssl -ldl -lyaml -lz -lstdc++" \
+	-ld-options "-static -lpthread -L/usr/lib64 -lleveldb -lssl -ldl -lyaml -lz -lstdc++" \
 	-prelude "(declare (not safe))" \
 	-exe $(PROJECT)/main.ss
 

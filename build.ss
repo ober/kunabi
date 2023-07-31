@@ -5,9 +5,8 @@
 
 (defbuild-script
   `("kunabi/cloudtrail"
-    (exe:
+    (static-exe:
      "kunabi/main"
      bin: "kunabi"
      "-ld-options"
-     "-lpthread -lleveldb -lyaml -ldl -lssl -lz -L/usr/lib64 -L/usr/pkg/lib -I/usr/pkg/include"
-     "-prelude" "(declare (not safe))")))
+     "-lpthread -lleveldb -lyaml -ldl -lssl -lz -L/usr/lib64")))

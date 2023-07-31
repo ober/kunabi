@@ -14,7 +14,6 @@
   :std/iter
   :std/misc/list
   :std/misc/threads
-  :std/misc/queue
   :std/pregexp
   :std/srfi/1
   :std/srfi/95
@@ -98,7 +97,7 @@
             (let ((mid (nth 1 (pregexp-split "#" k))))
               (unless (member mid res)
                 (set! res (cons mid res)))
-              (leveldb-iterator-seek itor (format "~a#" key))
+              (leveldb-iterator-next itor)
               (lp res))
               res))
         res))))
