@@ -304,22 +304,11 @@
      indices-hash)
     (displayln "indicies count total: " total)))
 
-
 (def (count-index idx)
   (if (db-key? idx)
     (let* ((entries (hash-keys (db-get idx)))
            (count (length entries)))
       count)))
-
-;; (def (list-index-entries idx)
-;;   (if (db-key? idx)
-;;     (let ((entries (hash-keys (db-get idx))))
-;;       (if (list? entries)
-;; 	      (for-each displayln (sort! entries eq?))
-;; 	      (begin
-;; 	        (displayln "did not get list back from entries")
-;; 	        (type-of entries))))
-;;     (displayln "no idx found for " idx)))
 
 (def (resolve-records ids)
   (when (list? ids)
