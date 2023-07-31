@@ -1,26 +1,19 @@
 (gerbil-build-deps-v2:
- (ober/kunabi/client
-  "kunabi/client"
+ (ober/kunabi/cloudtrail
+  "kunabi/cloudtrail"
   (gerbil/core
    gerbil/gambit
    gerbil/gambit/os
    gerbil/gambit/threads
    ober/oberlib
-   std/actor
-   std/db/dbi
    std/db/leveldb
-   std/db/postgresql
-   std/db/postgresql-driver
    std/debug/heap
    std/debug/memleak
    std/format
    std/generic/dispatch
    std/iter
-   std/logger
    std/misc/list
    std/misc/threads
-   std/net/address
-   std/net/httpd
    std/pregexp
    std/srfi/1
    std/srfi/95
@@ -28,34 +21,26 @@
    std/text/json
    std/text/yaml
    std/text/zlib))
- (ober/kunabi/kunabi
+ (ober/kunabi/main
   (exe:
-   "kunabi/kunabi"
+   "kunabi/main"
+   bin:
+   "kunabi"
    "-ld-options"
-   "-lpthread -lleveldb -lyaml -ldl -lssl -lz -L/usr/lib64 -L/usr/pkg/lib -I/usr/pkg/include"
-   "-prelude"
-   "(declare (not safe))")
+   "-lpthread -lleveldb -lyaml -ldl -lz -L/usr/lib64")
   (gerbil/core
    gerbil/gambit
    gerbil/gambit/os
    gerbil/gambit/threads
-   ober/kunabi/client
+   ober/kunabi/cloudtrail
    ober/oberlib
-   std/actor
-   std/db/dbi
    std/db/leveldb
-   std/db/postgresql
-   std/db/postgresql-driver
    std/debug/heap
    std/debug/memleak
    std/format
    std/generic/dispatch
    std/iter
-   std/logger
    std/misc/list
-   std/misc/lru
-   std/net/address
-   std/net/httpd
    std/pregexp
    std/srfi/1
    std/srfi/95
