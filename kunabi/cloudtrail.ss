@@ -6,22 +6,15 @@
   :gerbil/gambit
   :gerbil/gambit/os
   :gerbil/gambit/threads
-  :std/actor
-  :std/db/dbi
-  :std/db/postgresql
-  :std/db/postgresql-driver
   :std/db/leveldb
   :std/debug/heap
   :std/debug/memleak
   :std/format
   :std/generic/dispatch
   :std/iter
-  :std/logger
   :std/misc/list
   :std/misc/threads
   :std/misc/queue
-  :std/net/address
-  :std/net/httpd
   :std/pregexp
   :std/srfi/1
   :std/srfi/95
@@ -105,7 +98,7 @@
             (let ((mid (nth 1 (pregexp-split "#" k))))
               (unless (member mid res)
                 (set! res (cons mid res)))
-              (leveldb-iterator-next itor)
+              (leveldb-iterator-seek itor (format "~a#" key))
               (lp res))
               res))
         res))))
