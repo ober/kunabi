@@ -43,7 +43,7 @@
 
 (def HC 0)
 (def write-back-count 0)
-(def max-wb-size (def-num (getenv "k_max_wb" 1000000)))
+(def max-wb-size (def-num (getenv "k_max_wb" 100000)))
 (def tmax (def-num (getenv "tmax" 12)))
 (def indices-hash (make-hash-table))
 
@@ -251,7 +251,7 @@
     (begin
       (displayln "writing.... " write-back-count)
       (leveldb-write db wb)
-      (compact)
+      ;;(compact)
       (set! write-back-count 0))))
 
 (def (get-last-key)
@@ -460,13 +460,13 @@
       (create-directory* db-dir))
     (let ((location (format "~a/records" db-dir)))
       (leveldb-open location (leveldb-options
-                              paranoid-checks: #t
+                              paranoid-checks: #f
                               max-open-files: (def-num (getenv "k_max_files" #f))
                               bloom-filter-bits: (def-num (getenv "k_bloom_bits" #f))
                               compression: #t
                               block-size: (def-num (getenv "k_block_size" #f))
                               write-buffer-size: (def-num (getenv "k_write_buffer" (* 1024 1024 16)))
-                              lru-cache-capacity: (def-num (getenv "k_lru_cache" 10000)))))))
+                              lru-cache-capacity: (def-num (getenv "k_lru_cache" 1000)))))))
 
 (def (def-num num)
   (if (string? num)
