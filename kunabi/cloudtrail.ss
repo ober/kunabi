@@ -271,7 +271,7 @@
 
 (def (resolve-records ids)
   (when (list? ids)
-    (let ((outs [[ "Date" "Name" "User" "Source" "Hostname" "Type" "Request" "User Agent" "Error Code" "Error Message" ]]))
+    (let ((outs [[ "Date" "Name" "User" "Source" "Hostname" "Type" "Request" "User Agent" "Error Code" "Error Message" "UserIdentify"]]))
       (for (id ids)
         (let ((id2 (db-get id)))
           (when (table? id2)
@@ -287,6 +287,7 @@
 		                            .?ua
 		                            .?ec
 		                            .?em
+                                (if (table? .?ua) (hash->list .?ua) .?ua)
                                 ] outs))))))
       (style-output outs "org-mode"))))
 
@@ -307,7 +308,6 @@
       (displayln "Could not find entry in indices-db for " look-for))))
 
 ;;;;;;;;;; vpc stuff
-
 
 (def (ip? x)
   (pregexp-match "^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}" x))
@@ -447,11 +447,6 @@
                               write-buffer-size: (def-num (getenv "k_write_buffer" (* 1024 1024 16)))
                               lru-cache-capacity: (def-num (getenv "k_lru_cache" 1000)))))))
 
-(def (def-num num)
-  (if (string? num)
-    (string->number num)
-    num))
-
 (def (db-get key)
   (dp (format "db-get: ~a" key))
   (let ((ret (leveldb-get db (format "~a" key))))
@@ -474,6 +469,7 @@
 (def (db-init)
   (dp "in db-init")
   (leveldb-writebatch))
+
 
 ;; leveldb stuff
 (def (get-leveldb key)
@@ -527,3 +523,8 @@
   "Repair the db"
   (let ((db-dir (format "~a/kunabi-db/" (user-info-home (user-info (user-name))))))
     (leveldb-repair-db (format "~a/records" db-dir))))
+
+(def (def-num num)
+  (if (string? num)
+    (string->number num)
+    num))
