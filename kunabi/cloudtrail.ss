@@ -286,7 +286,7 @@
 		                            .?ua
 		                            .?ec
 		                            .?em
-                                (if (table? .?ui) (let-hash .ui (if (table? .?sessionContext) (hash->list .?sessionContext) .?sessionContext)))
+                                .?ua
                                 ] outs))))))
       (style-output outs "org-mode"))))
 
@@ -352,12 +352,10 @@
              ((string=? "AssumedRole" type)
               (if (hash-key? ui 'sessionContext)
                 (when (table? .?sessionContext)
-                  (let-hash
-                      .?sessionContext
+                  (let-hash .?sessionContext
                     (when (table? .?sessionIssuer)
-                      (let-hash
-                          .?sessionIssuer
-                        (set! username .userName)))))
+                      (let-hash .?sessionIssuer
+                        (set! username (format "~a/~a" .userName (cdr (pregexp-split ":" ...principalId))))))))
                 (begin
                   (displayln (format "Fall thru find-user ~a~%" (hash->list ui)))
                   (set! username (cdr (pregexp-split ":" .principalId)))))) ;; not found go with this for now.
