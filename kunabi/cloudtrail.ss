@@ -108,7 +108,6 @@
       (displayln item))
     (reverse (unique! (sort! lst eq?)))))
 
-
 (def (ln)
   (sort-uniq-reverse
    (uniq-by-mid-prefix "user")))
@@ -287,7 +286,7 @@
 		                            .?ua
 		                            .?ec
 		                            .?em
-                                (if (table? .?ui) (hash->list .?ui) .?ui)
+                                (if (table? .?ui) (let-hash .ui (if (table? .?sessionContext) (hash->list .?sessionContext) .?sessionContext)))
                                 ] outs))))))
       (style-output outs "org-mode"))))
 
