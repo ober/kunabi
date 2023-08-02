@@ -136,11 +136,6 @@
 (def (st)
   (displayln "Totals: "
              " records: " (countdb)
-             " users: " (count-index "I-users")
-             " errors: " (count-index "I-errors")
-             " regions: " (count-index "I-aws-region")
-             " events: " (count-index "I-events")
-             " files: " (count-index "I-files")
              ))
 
 (def (read file)
@@ -273,22 +268,6 @@
       (if (leveldb-iterator-valid? itor)
         (bytes->string (leveldb-iterator-key itor))
         (lp)))))
-
-(def (indices-report)
-  (let ((total 0))
-    (hash-for-each
-     (lambda (k v)
-       (let ((count (hash-length v)))
-	       (displayln k ":" count " v: " v " first:" (hash-keys v))
-	       (set! total (+ total count))))
-     indices-hash)
-    (displayln "indicies count total: " total)))
-
-(def (count-index idx)
-  (if (db-key? idx)
-    (let* ((entries (hash-keys (db-get idx)))
-           (count (length entries)))
-      count)))
 
 (def (resolve-records ids)
   (when (list? ids)
