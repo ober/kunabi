@@ -64,7 +64,7 @@
     (leveldb-iterator-seek-first itor)
     (let lp ()
       (leveldb-iterator-next itor)
-      (let ((key (bytes->string (leveldb-iterator-key itor)))
+      (let ((key (utf8->string (leveldb-iterator-key itor)))
             (val (u8vector->object (leveldb-iterator-value itor))))
         (if (table? val)
           (displayln (format "k: ~a v: ~a" key (hash->list val)))
@@ -79,7 +79,7 @@
     (leveldb-iterator-seek itor (format "~a" key))
     (let lp ((res '()))
       (if (leveldb-iterator-valid? itor)
-        (if (pregexp-match key (bytes->string (leveldb-iterator-key itor)))
+        (if (pregexp-match key (utf8->string (leveldb-iterator-key itor)))
           (begin
             (set! res (cons (u8vector->object (leveldb-iterator-value itor)) res))
             (leveldb-iterator-next itor)
@@ -92,7 +92,7 @@
     (leveldb-iterator-seek itor (format "~a#" key))
     (let lp ((res '()))
       (if (leveldb-iterator-valid? itor)
-        (let ((k (bytes->string (leveldb-iterator-key itor))))
+        (let ((k (utf8->string (leveldb-iterator-key itor))))
           (if (pregexp-match key k)
             (let ((mid (nth 1 (pregexp-split "#" k))))
               (unless (member mid res)
@@ -205,7 +205,7 @@
   (hash-ref
 	 (read-json
 		(open-input-string
-		 (bytes->string
+		 (utf8->string
 			(uncompress file))))
 	 'Records))
 
@@ -268,7 +268,7 @@
     (let lp ()
       (leveldb-iterator-prev itor)
       (if (leveldb-iterator-valid? itor)
-        (bytes->string (leveldb-iterator-key itor))
+        (utf8->string (leveldb-iterator-key itor))
         (lp)))))
 
 (def (get-first-key)
@@ -278,7 +278,7 @@
     (let lp ()
       (leveldb-iterator-next itor)
       (if (leveldb-iterator-valid? itor)
-        (bytes->string (leveldb-iterator-key itor))
+        (utf8->string (leveldb-iterator-key itor))
         (lp)))))
 
 (def (resolve-records ids)
@@ -499,9 +499,9 @@
       (leveldb-iterator-next itor)
       (if (leveldb-iterator-valid? itor)
         (begin
-          (if (pregexp-match key (bytes->string (leveldb-iterator-key itor)))
+          (if (pregexp-match key (utf8->string (leveldb-iterator-key itor)))
             (begin
-              (displayln (format "Found one ~a" (bytes->string (leveldb-iterator-key itor))))
+              (displayln (format "Found one ~a" (utf8->string (leveldb-iterator-key itor))))
               (lp (1+ count)))
             (lp count)))
         count))))
