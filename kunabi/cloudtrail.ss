@@ -124,7 +124,9 @@
   (resolve-records (resolve-by-key key)))
 
 (def (report user)
-  (tally-by-en (resolve-by-key (format "user#~a#" user))))
+  (tally-by-en
+   (resolve-by-key
+    (format "user#~a#" user))))
 
 (def (sn key)
   (match-key (format "user#~a#" key)))
@@ -301,11 +303,8 @@
                 (if (hash-ref tally en #f)
                   (hash-put! tally en (+ 1 (hash-ref tally en)))
                   (hash-put! tally en 1)))))))
-      (hash-for-each
-       (lambda (k v)
-         (displayln (format "~a: ~a" k v)))
-       tally))))
-
+      (for (k (sort! (hash-keys tally) string<?))
+        (displayln (format "~a: ~a" k (hash-ref tally k)))))))
 
 (def (get-host-name ip)
   (if (pregexp-match "^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}" ip)
