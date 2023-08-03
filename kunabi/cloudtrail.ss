@@ -80,7 +80,7 @@
     (let lp ((res '()))
       (if (leveldb-iterator-valid? itor)
         (if (pregexp-match key (bytes->string (leveldb-iterator-key itor)))
-          (begin
+          (beginas
             (set! res (cons (u8vector->object (leveldb-iterator-value itor)) res))
             (leveldb-iterator-next itor)
             (lp res))
@@ -122,6 +122,9 @@
 
 (def (match-key key)
   (resolve-records (resolve-by-key key)))
+
+(def (report user)
+  (tally-records (resolve-by-key (format "user#~a#" user))))
 
 (def (sn key)
   (match-key (format "user#~a#" key)))
@@ -289,6 +292,22 @@
                                 .?ua
                                 ] outs))))))
       (style-output outs "org-mode"))))
+
+(def (tally-by-en ids)
+  (when (list? ids)
+    (let ((tally (make-hash)))
+      (for (id ids)
+        (let ((id2 (db-get id)))
+          (when (table? id2)
+            (let-hash id2
+              (let ((en .?en))
+                (if (hash-ref tally en #f)
+                  (hash-set! tally en (+ 1 (hash-ref tally en)))
+                  (hash-set! tally en 1)))))))
+      (for-hash tally
+        (lambda (k v)
+          (displayln (format "~a: ~a" k v)))))))
+
 
 (def (get-host-name ip)
   (if (pregexp-match "^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}" ip)
