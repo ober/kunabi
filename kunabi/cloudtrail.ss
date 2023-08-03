@@ -80,7 +80,7 @@
     (let lp ((res '()))
       (if (leveldb-iterator-valid? itor)
         (if (pregexp-match key (bytes->string (leveldb-iterator-key itor)))
-          (beginas
+          (begin
             (set! res (cons (u8vector->object (leveldb-iterator-value itor)) res))
             (leveldb-iterator-next itor)
             (lp res))
@@ -124,7 +124,7 @@
   (resolve-records (resolve-by-key key)))
 
 (def (report user)
-  (tally-records (resolve-by-key (format "user#~a#" user))))
+  (tally-by-en (resolve-by-key (format "user#~a#" user))))
 
 (def (sn key)
   (match-key (format "user#~a#" key)))
@@ -295,18 +295,19 @@
 
 (def (tally-by-en ids)
   (when (list? ids)
-    (let ((tally (make-hash)))
+    (let ((tally (make-hash-table)))
       (for (id ids)
         (let ((id2 (db-get id)))
           (when (table? id2)
             (let-hash id2
               (let ((en .?en))
                 (if (hash-ref tally en #f)
-                  (hash-set! tally en (+ 1 (hash-ref tally en)))
-                  (hash-set! tally en 1)))))))
-      (for-hash tally
-        (lambda (k v)
-          (displayln (format "~a: ~a" k v)))))))
+                  (hash-put! tally en (+ 1 (hash-ref tally en)))
+                  (hash-put! tally en 1)))))))
+      (hash-for-each
+       (lambda (k v)
+         (displayln (format "~a: ~a" k v)))
+       tally))))
 
 
 (def (get-host-name ip)
@@ -316,14 +317,6 @@
 	      (let ((lookup-name (host-info-name lookup)))
 	        lookup-name)))
     ip))
-
-(def (search-event look-for)
-  (dp (format "look-for: ~a" look-for))
-  (let ((index-name (format "I-~a" look-for)))
-    (if (db-key? index-name)
-      (let ((matches (hash-keys (db-get index-name))))
-	      (resolve-records matches))
-      (displayln "Could not find entry in indices-db for " look-for))))
 
 ;;;;;;;;;; vpc stuff
 
@@ -342,18 +335,6 @@
             (unless (string=? lookup-name ip)
               (db-batch (format "H-~a" ip) lookup-name))))))))
 
-(def (resolve-all-hosts)
-  (let ((threads [])
-        (entries (hash-keys (db-get "I-source-ip-address"))))
-    (for (entry entries)
-      (add-host-ent entry))))
-
-(def (list-source-ips)
-  (let (entries (sort! (hash-keys (db-get "I-source-ip-address")) eq?))
-    (for (entry entries)
-      (let ((hname (format "H-~a" entry)))
-        (if (db-key? hname)
-          (displayln (format "~a: ~a" entry (db-get hname))))))))
 
 (def (find-user ui)
   (let ((username ""))
@@ -391,13 +372,6 @@
               (set! username (format "Unknown Type: ~a" (hash->str ui)))))
             (displayln "error: type :" type " not found in ui" (hash->str ui))))))
     username))
-
-(def (search-event-obj look-for)
-  (let ((index-name (format "I-~a" look-for)))
-    (if (db-key? index-name)
-      (let ((matches (hash-keys (db-get index-name))))
-        (resolve-records matches))
-      (displayln "Could not find entry in indices-db for " look-for))))
 
 (def (process-row row)
   (dp (format "process-row: row: ~a" (hash->list row)))

@@ -52,7 +52,7 @@
    ("sr" (hash (description: "sr <Region name> => list all records for region name") (usage: "sr <region name>") (count: 1)))
    ("st" (hash (description: "st: Status") (usage: "sr") (count: 0)))
    ("repairdb" (hash (description: "repairdb") (usage: "repairdb") (count: 0)))
-   ("report" (hash (description: "report") (usage: "report") (count: 0)))
+   ("report" (hash (description: "report") (usage: "report <username>") (count: 1)))
    ))
 
 (def (main . args)
@@ -70,7 +70,7 @@
       (unless (= (length args2) count)
 	(usage-verb verb))
       (apply (eval (string->symbol (string-append "ober/kunabi/cloudtrail#" verb))) args2)))
-  ;;(db-close)
+  (when db (db-close))
   )
 
 (def (usage-verb verb)
