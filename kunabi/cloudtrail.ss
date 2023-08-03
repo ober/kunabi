@@ -178,8 +178,7 @@
       (cond-expand
         (gerbil-smp
          (while (< tmax (length (all-threads)))
-           (displayln "sleeping")
-           (thread-sleep! .05))
+           (thread-yield!))
          (let ((thread (spawn (lambda () (read-ct-file file)))))
            (set! pool (cons thread pool))))
         (else
