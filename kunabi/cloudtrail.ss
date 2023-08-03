@@ -355,7 +355,7 @@
                   (let-hash .?sessionContext
                     (when (table? .?sessionIssuer)
                       (let-hash .?sessionIssuer
-                        (set! username (format "~a/~a" .userName (caar (pregexp-split ":" ...principalId))))))))
+                        (set! username (format "~a/~a" .userName (cadr (pregexp-split ":" ...principalId))))))))
                 (begin
                   (displayln (format "Fall thru find-user ~a~%" (hash->list ui)))
                   (set! username (cdr (pregexp-split ":" .principalId)))))) ;; not found go with this for now.
