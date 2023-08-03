@@ -53,6 +53,7 @@
    ("st" (hash (description: "st: Status") (usage: "sr") (count: 0)))
    ("repairdb" (hash (description: "repairdb") (usage: "repairdb") (count: 0)))
    ("report" (hash (description: "report") (usage: "report <username>") (count: 1)))
+   ("reports" (hash (description: "reports") (usage: "reports") (count: 0)))
    ))
 
 (def (main . args)
