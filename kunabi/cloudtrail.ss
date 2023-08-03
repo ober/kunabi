@@ -143,9 +143,6 @@
 (def (read file)
   (read-ct-file file))
 
-(def (source-ips)
-  (list-source-ips))
-
 (def (ct file)
   (load-ct file))
 
