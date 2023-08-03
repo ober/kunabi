@@ -103,20 +103,26 @@
         res))))
 
 (def (sort-uniq-reverse lst)
-  (for-each
-    (lambda (item)
-      (displayln item))
-    (reverse (unique! (sort! lst eq?)))))
+  (reverse (unique! (sort! lst eq?))))
 
 (def (ln)
+  (for-each displayln (list-users)))
+
+(def (list-users)
   (sort-uniq-reverse
    (uniq-by-mid-prefix "user")))
 
 (def (le)
+  (for-each displayln (list-events)))
+
+(def (list-events)
   (sort-uniq-reverse
    (uniq-by-mid-prefix "eventName")))
 
 (def (lec)
+  (for-each displayln (list-errorCodes)))
+
+(def (list-errorCodes)
   (sort-uniq-reverse
    (uniq-by-mid-prefix "errorCode")))
 
@@ -129,7 +135,7 @@
     (format "user#~a#" user))))
 
 (def (reports)
-  (for (user (ln))
+  (for (user (list-users))
     (displayln (format "<--- ~A" user))
     (report user)))
 
