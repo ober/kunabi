@@ -128,6 +128,11 @@
    (resolve-by-key
     (format "user#~a#" user))))
 
+(def (reports)
+  (for (user (ln))
+    (displayln (format "<--- ~A" user))
+    (report user)))
+
 (def (sn key)
   (match-key (format "user#~a#" key)))
 
