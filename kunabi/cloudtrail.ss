@@ -6,6 +6,7 @@
   :gerbil/gambit
   :gerbil/gambit/os
   :gerbil/gambit/threads
+  :std/text/utf8
   :std/db/leveldb
   :std/debug/heap
   :std/debug/memleak
