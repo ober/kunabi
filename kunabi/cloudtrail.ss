@@ -106,34 +106,37 @@
 (def (sort-uniq-reverse lst)
   (reverse (unique! (sort! lst eq?))))
 
+(def (index)
+  (index-user)
+  (index-event))
+
+;; users
 (def (ln)
   (for-each displayln (list-users)))
 
 (def (index-user)
   (db-put "user!index" (list-users)))
 
-(def (index-event)
-  (db-put "event!index" (list-events)))
-
-(def (index)
-  (index-user)
-  (index-event))
-
 (def (list-users)
-  (sort-uniq-reverse
-   (uniq-by-mid-prefix "user")))
+  (let (index "event!user")
+    (if (db-key? index)
+      (db-get index)
+      (begin
+        (sort-uniq-reverse
+         (uniq-by-mid-prefix "user"))))))
 
+;; events
 (def (le)
   (for-each displayln (list-events)))
+
+(def (index-event)
+  (db-put "event!index" (list-events)))
 
 (def (list-events)
   (let (index "event!index")
     (if (db-key? index)
-      (let ((entries (db-get index)))
-        (displayln (type-of entries))
-        (for-each displayln entries))
+      (db-get index)
       (begin
-        (index-event)
         (sort-uniq-reverse
          (uniq-by-mid-prefix "eventName"))))))
 
