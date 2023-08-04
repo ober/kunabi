@@ -166,6 +166,11 @@
   (resolve-records (resolve-by-key key)))
 
 (def (report user)
+  (displayln "** Total by Source IP")
+  (tally-by-ip
+   (resolve-by-key
+    (format "user#~a#" user)))
+  (displayln "** Total by Event Name")
   (tally-by-en
    (resolve-by-key
     (format "user#~a#" user))))
@@ -349,6 +354,20 @@
                 (if (hash-ref tally en #f)
                   (hash-put! tally en (+ 1 (hash-ref tally en)))
                   (hash-put! tally en 1)))))))
+      (for (k (sort! (hash-keys tally) string<?))
+        (displayln (format "|~a|~a|" k (hash-ref tally k)))))))
+
+(def (tally-by-ip ids)
+  (when (list? ids)
+    (let ((tally (make-hash-table)))
+      (for (id ids)
+        (let ((id2 (db-get id)))
+          (when (table? id2)
+            (let-hash id2
+              (let ((sia .?sia))
+                (if (hash-ref tally sia #f)
+                  (hash-put! tally sia (+ 1 (hash-ref tally sia)))
+                  (hash-put! tally sia 1)))))))
       (for (k (sort! (hash-keys tally) string<?))
         (displayln (format "|~a|~a|" k (hash-ref tally k)))))))
 
