@@ -109,6 +109,16 @@
 (def (ln)
   (for-each displayln (list-users)))
 
+(def (index-user)
+  (db-put "user!index" (list-users)))
+
+(def (index-event)
+  (db-put "event!index" (list-events)))
+
+(def (index)
+  (index-user)
+  (index-event))
+
 (def (list-users)
   (sort-uniq-reverse
    (uniq-by-mid-prefix "user")))
