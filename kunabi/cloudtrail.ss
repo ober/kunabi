@@ -144,6 +144,9 @@
 (def (lec)
   (for-each displayln (list-errorCodes)))
 
+(def (index-errorCode)
+  (db-put "event!errorCode" (list-errorCodes)))
+
 (def (list-errorCodes)
   (let (index "event!errorCode")
     (if (db-key? index)
