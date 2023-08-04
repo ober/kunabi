@@ -354,6 +354,8 @@
                 (if (hash-ref tally en #f)
                   (hash-put! tally en (+ 1 (hash-ref tally en)))
                   (hash-put! tally en 1)))))))
+      (displayln "|Host|Total|")
+      (displayln "|-|")
       (for (k (sort! (hash-keys tally) string<?))
         (displayln (format "|~a|~a|" k (hash-ref tally k)))))))
 
@@ -368,6 +370,8 @@
                 (if (hash-ref tally sia #f)
                   (hash-put! tally sia (+ 1 (hash-ref tally sia)))
                   (hash-put! tally sia 1)))))))
+      (displayln "|Host|Total|")
+      (displayln "|-|")
       (for (k (sort! (hash-keys tally) string<?))
         (displayln (format "|~a|~a|" (get-host-name k) (hash-ref tally k)))))))
 
