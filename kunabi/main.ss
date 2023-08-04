@@ -54,6 +54,7 @@
    ("repairdb" (hash (description: "repairdb") (usage: "repairdb") (count: 0)))
    ("report" (hash (description: "report") (usage: "report <username>") (count: 1)))
    ("reports" (hash (description: "reports") (usage: "reports") (count: 0)))
+   ("index" (hash (description: "index") (usage: "index") (count: 0)))
    ))
 
 (def (main . args)
