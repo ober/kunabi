@@ -108,6 +108,7 @@
 
 (def (index)
   (index-user)
+  (index-errorCode)
   (index-event))
 
 ;; users
@@ -121,9 +122,11 @@
   (let (index "user!index")
     (if (db-key? index)
       (db-get index)
-      (begin
-        (sort-uniq-reverse
-         (uniq-by-mid-prefix "user"))))))
+      (let (entries
+            (sort-uniq-reverse
+             (uniq-by-mid-prefix "user")))
+        (db-put index entries)
+        entries))))
 
 ;; events
 (def (le)
@@ -136,9 +139,11 @@
   (let (index "event!index")
     (if (db-key? index)
       (db-get index)
-      (begin
-        (sort-uniq-reverse
-         (uniq-by-mid-prefix "eventName"))))))
+      (let (entries
+            (sort-uniq-reverse
+             (uniq-by-mid-prefix "eventName")))
+        (db-put index entries)
+        entries))))
 
 ;; error codes
 (def (lec)
@@ -151,9 +156,11 @@
   (let (index "event!errorCode")
     (if (db-key? index)
       (db-get index)
-      (begin
-        (sort-uniq-reverse
-         (uniq-by-mid-prefix "errorCode"))))))
+      (let (entries
+            (sort-uniq-reverse
+             (uniq-by-mid-prefix "errorCode")))
+        (db-put index entries)
+        entries))))
 
 (def (match-key key)
   (resolve-records (resolve-by-key key)))
