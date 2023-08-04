@@ -137,7 +137,7 @@
 
 (def (reports)
   (for (user (list-users))
-    (displayln (format "<--- ~A" user))
+    (displayln (format "*** ~A" user))
     (report user)))
 
 (def (sn key)
@@ -315,7 +315,7 @@
                   (hash-put! tally en (+ 1 (hash-ref tally en)))
                   (hash-put! tally en 1)))))))
       (for (k (sort! (hash-keys tally) string<?))
-        (displayln (format "~a: ~a" k (hash-ref tally k)))))))
+        (displayln (format "|~a|~a|" k (hash-ref tally k)))))))
 
 (def (get-host-name ip)
   (if (pregexp-match "^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}" ip)
