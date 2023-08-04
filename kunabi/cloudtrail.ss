@@ -118,7 +118,7 @@
   (db-put "user!index" (list-users)))
 
 (def (list-users)
-  (let (index "event!user")
+  (let (index "user!index")
     (if (db-key? index)
       (db-get index)
       (begin
@@ -140,12 +140,17 @@
         (sort-uniq-reverse
          (uniq-by-mid-prefix "eventName"))))))
 
+;; error codes
 (def (lec)
   (for-each displayln (list-errorCodes)))
 
 (def (list-errorCodes)
-  (sort-uniq-reverse
-   (uniq-by-mid-prefix "errorCode")))
+  (let (index "event!errorCode")
+    (if (db-key? index)
+      (db-get index)
+      (begin
+        (sort-uniq-reverse
+         (uniq-by-mid-prefix "errorCode"))))))
 
 (def (match-key key)
   (resolve-records (resolve-by-key key)))
