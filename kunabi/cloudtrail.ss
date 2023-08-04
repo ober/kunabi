@@ -127,8 +127,15 @@
   (for-each displayln (list-events)))
 
 (def (list-events)
-  (sort-uniq-reverse
-   (uniq-by-mid-prefix "eventName")))
+  (let (index "event!index")
+    (if (db-key? index)
+      (let ((entries (db-get index)))
+        (displayln (type-of entries))
+        (for-each displayln entries))
+      (begin
+        (index-event)
+        (sort-uniq-reverse
+         (uniq-by-mid-prefix "eventName"))))))
 
 (def (lec)
   (for-each displayln (list-errorCodes)))
