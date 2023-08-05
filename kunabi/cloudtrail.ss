@@ -345,7 +345,8 @@
 
 (def (tally-by-en ids)
   (when (list? ids)
-    (let ((tally (make-hash-table)))
+    (let ((outs [[ "Event Name" "Total" ]])
+          (tally (make-hash-table)))
       (for (id ids)
         (let ((id2 (db-get id)))
           (when (table? id2)
@@ -354,14 +355,17 @@
                 (if (hash-ref tally en #f)
                   (hash-put! tally en (+ 1 (hash-ref tally en)))
                   (hash-put! tally en 1)))))))
-      (displayln "|Host|Total|")
-      (displayln "|-|")
       (for (k (sort! (hash-keys tally) string<?))
-        (displayln (format "|~a|~a|" k (hash-ref tally k)))))))
+        (set! outs (cons [
+                          k
+                          (hash-ref tally k)
+                          ] outs)))
+      (style-output outs "org-mode"))))
 
 (def (tally-by-ip ids)
   (when (list? ids)
-    (let ((tally (make-hash-table)))
+    (let ((outs [[ "Host" "Totals" ]])
+          (tally (make-hash-table)))
       (for (id ids)
         (let ((id2 (db-get id)))
           (when (table? id2)
@@ -370,10 +374,12 @@
                 (if (hash-ref tally sia #f)
                   (hash-put! tally sia (+ 1 (hash-ref tally sia)))
                   (hash-put! tally sia 1)))))))
-      (displayln "|Host|Total|")
-      (displayln "|-|")
       (for (k (sort! (hash-keys tally) string<?))
-        (displayln (format "|~a|~a|" (get-host-name k) (hash-ref tally k)))))))
+        (set! outs (cons [
+                          (get-host-name k)
+                          (hash-ref tally k)
+                          ] outs)))
+      (style-output outs "org-mode"))))
 
 (def (get-host-name ip)
   (if (pregexp-match "^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}" ip)
