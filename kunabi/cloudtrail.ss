@@ -100,7 +100,7 @@
                 (set! res (cons mid res)))
               (leveldb-iterator-next itor)
               (lp res))
-              res))
+            res))
         res))))
 
 (def (sort-uniq-reverse lst)
@@ -295,12 +295,10 @@
 (def (flush-all?)
   (dp (format "write-back-count && max-wb-size ~a ~a" write-back-count max-wb-size))
   (when (> write-back-count max-wb-size)
-    (spawn
-     (lambda ()
-      (displayln "writing.... " write-back-count)
-      (leveldb-write db wb)
-      ;;(compact)
-      (set! write-back-count 0)))))
+    (displayln "writing.... " write-back-count)
+    (leveldb-write db wb)
+    ;;(compact)
+    (set! write-back-count 0)))
 
 (def (get-last-key)
   "Get the last key for use in compaction"
