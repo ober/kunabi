@@ -462,7 +462,7 @@
              (rid .?recipientAccountId)
              (rp .?requestParameters)
              (user user)
-             (re .?responseElements)
+             ;;(re .?responseElements)
              (sia .?sourceIPAddress)
              (ua .?userAgent)
              (ui .?userIdentity))))
