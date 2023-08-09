@@ -7,7 +7,7 @@
   :gerbil/gambit/os
   :gerbil/gambit/threads
   :std/text/utf8
-  :std/db/leveldb
+  :std/db/lmdb
   :std/debug/heap
   :std/debug/memleak
   :std/format
@@ -30,7 +30,6 @@
 
 (export #t)
 
-(def db-type leveldb:)
 (def nil '#(nil))
 (def program-name "kunabi")
 (def config-file "~/.kunabi.yaml")
@@ -39,7 +38,7 @@
 
 (def hc-hash (make-hash-table))
 
-(def wb (db-init))
+(def env (db-init))
 (def db (db-open))
 
 (def HC 0)
@@ -56,94 +55,94 @@
      (car (yaml-load config-file)))
     config))
 
-(def (ls)
-  (list-records))
+;; (def (ls)
+;;   (list-records))
 
-(def (list-records)
-  "Print all records"
-  (let (itor (leveldb-iterator db))
-    (leveldb-iterator-seek-first itor)
-    (let lp ()
-      (leveldb-iterator-next itor)
-      (let ((key (utf8->string (leveldb-iterator-key itor)))
-            (val (u8vector->object (leveldb-iterator-value itor))))
-        (if (table? val)
-          (displayln (format "k: ~a v: ~a" key (hash->list val)))
-          (displayln (format "k: ~a v: ~a" key val))))
-      (when (leveldb-iterator-valid? itor)
-        (lp)))))
+;; (def (list-records)
+;;   "Print all records"
+;;   (let (itor (leveldb-iterator db))
+;;     (leveldb-iterator-seek-first itor)
+;;     (let lp ()
+;;       (leveldb-iterator-next itor)
+;;       (let ((key (utf8->string (leveldb-iterator-key itor)))
+;;             (val (u8vector->object (leveldb-iterator-value itor))))
+;;         (if (table? val)
+;;           (displayln (format "k: ~a v: ~a" key (hash->list val)))
+;;           (displayln (format "k: ~a v: ~a" key val))))
+;;       (when (leveldb-iterator-valid? itor)
+;;         (lp)))))
 
 ;; readers
 
-(def (resolve-by-key key)
-  (let ((itor (leveldb-iterator db)))
-    (leveldb-iterator-seek itor (format "~a" key))
-    (let lp ((res '()))
-      (if (leveldb-iterator-valid? itor)
-        (if (pregexp-match key (utf8->string (leveldb-iterator-key itor)))
-          (begin
-            (set! res (cons (u8vector->object (leveldb-iterator-value itor)) res))
-            (leveldb-iterator-next itor)
-            (lp res))
-          res)
-        res))))
+;; (def (resolve-by-key key)
+;;   (let ((itor (leveldb-iterator db)))
+;;     (leveldb-iterator-seek itor (format "~a" key))
+;;     (let lp ((res '()))
+;;       (if (leveldb-iterator-valid? itor)
+;;         (if (pregexp-match key (utf8->string (leveldb-iterator-key itor)))
+;;           (begin
+;;             (set! res (cons (u8vector->object (leveldb-iterator-value itor)) res))
+;;             (leveldb-iterator-next itor)
+;;             (lp res))
+;;           res)
+;;         res))))
 
-(def (uniq-by-mid-prefix key)
-  (let ((itor (leveldb-iterator db)))
-    (leveldb-iterator-seek itor (format "~a#" key))
-    (let lp ((res '()))
-      (if (leveldb-iterator-valid? itor)
-        (let ((k (utf8->string (leveldb-iterator-key itor))))
-          (if (pregexp-match key k)
-            (let ((mid (nth 1 (pregexp-split "#" k))))
-              (unless (member mid res)
-                (set! res (cons mid res)))
-              (leveldb-iterator-next itor)
-              (lp res))
-            res))
-        res))))
+;; (def (uniq-by-mid-prefix key)
+;;   (let ((itor (leveldb-iterator db)))
+;;     (leveldb-iterator-seek itor (format "~a#" key))
+;;     (let lp ((res '()))
+;;       (if (leveldb-iterator-valid? itor)
+;;         (let ((k (utf8->string (leveldb-iterator-key itor))))
+;;           (if (pregexp-match key k)
+;;             (let ((mid (nth 1 (pregexp-split "#" k))))
+;;               (unless (member mid res)
+;;                 (set! res (cons mid res)))
+;;               (leveldb-iterator-next itor)
+;;               (lp res))
+;;             res))
+;;         res))))
 
 (def (sort-uniq-reverse lst)
-  (reverse (unique! (sort! lst eq?))))
+   (reverse (unique! (sort! lst eq?))))
 
-(def (index)
-  (index-user)
-  (index-errorCode)
-  (index-event))
+;; (def (index)
+;;   (index-user)
+;;   (index-errorCode)
+;;   (index-event))
 
-;; users
-(def (ln)
-  (for-each displayln (list-users)))
+;; ;; users
+;; (def (ln)
+;;   (for-each displayln (list-users)))
 
-(def (index-user)
-  (db-put "user!index" (list-users)))
+;; (def (index-user)
+;;   (db-put "user!index" (list-users)))
 
-(def (list-users)
-  (let (index "user!index")
-    (if (db-key? index)
-      (db-get index)
-      (let (entries
-            (sort-uniq-reverse
-             (uniq-by-mid-prefix "user")))
-        (db-put index entries)
-        entries))))
+;; (def (list-users)
+;;   (let (index "user!index")
+;;     (if (db-key? index)
+;;       (db-get index)
+;;       (let (entries
+;;             (sort-uniq-reverse
+;;              (uniq-by-mid-prefix "user")))
+;;         (db-put index entries)
+;;         entries))))
 
-;; events
-(def (le)
-  (for-each displayln (list-events)))
+;; ;; events
+;; (def (le)
+;;   (for-each displayln (list-events)))
 
-(def (index-event)
-  (db-put "event!index" (list-events)))
+;; (def (index-event)
+;;   (db-put "event!index" (list-events)))
 
-(def (list-events)
-  (let (index "event!index")
-    (if (db-key? index)
-      (db-get index)
-      (let (entries
-            (sort-uniq-reverse
-             (uniq-by-mid-prefix "eventName")))
-        (db-put index entries)
-        entries))))
+;; (def (list-events)
+;;   (let (index "event!index")
+;;     (if (db-key? index)
+;;       (db-get index)
+;;       (let (entries
+;;             (sort-uniq-reverse
+;;              (uniq-by-mid-prefix "eventName")))
+;;         (db-put index entries)
+;;         entries))))
 
 ;; error codes
 (def (lec)
@@ -296,29 +295,29 @@
   (dp (format "write-back-count && max-wb-size ~a ~a" write-back-count max-wb-size))
   (when (> write-back-count max-wb-size)
     (displayln "writing.... " write-back-count)
-    (leveldb-write db wb)
+    ;;(leveldb-write db wb)
     ;;(compact)
     (set! write-back-count 0)))
 
-(def (get-last-key)
-  "Get the last key for use in compaction"
-  (let ((itor (leveldb-iterator db)))
-    (leveldb-iterator-seek-last itor)
-    (let lp ()
-      (leveldb-iterator-prev itor)
-      (if (leveldb-iterator-valid? itor)
-        (utf8->string (leveldb-iterator-key itor))
-        (lp)))))
+;; (def (get-last-key)
+;;   "Get the last key for use in compaction"
+;;   (let ((itor (leveldb-iterator db)))
+;;     (leveldb-iterator-seek-last itor)
+;;     (let lp ()
+;;       (leveldb-iterator-prev itor)
+;;       (if (leveldb-iterator-valid? itor)
+;;         (utf8->string (leveldb-iterator-key itor))
+;;         (lp)))))
 
-(def (get-first-key)
-  "Get the last key for use in compaction"
-  (let ((itor (leveldb-iterator db)))
-    (leveldb-iterator-seek-first itor)
-    (let lp ()
-      (leveldb-iterator-next itor)
-      (if (leveldb-iterator-valid? itor)
-        (utf8->string (leveldb-iterator-key itor))
-        (lp)))))
+;; (def (get-first-key)
+;;   "Get the last key for use in compaction"
+;;   (let ((itor (leveldb-iterator db)))
+;;     (leveldb-iterator-seek-first itor)
+;;     (let lp ()
+;;       (leveldb-iterator-next itor)
+;;       (if (leveldb-iterator-valid? itor)
+;;         (utf8->string (leveldb-iterator-key itor))
+;;         (lp)))))
 
 (def (resolve-records ids)
   (when (list? ids)
@@ -477,112 +476,57 @@
         (db-batch (format "errorCode#~a#~a" .errorCode epoch) req-id))
       )))
 
-;; db stuff
 
-(def (db-batch key value)
-  (unless (string? key) (dp (format "key: ~a val: ~a" (type-of key) (type-of value))))
-  (leveldb-writebatch-put wb key (object->u8vector value)))
+;; lmdb stuff
 
-(def (db-put key value)
-  (dp (format "<----> db-put: key: ~a val: ~a" key value))
-  (leveldb-put db key (object->u8vector value)))
+(def (db-open)
+  (dp (format "in db-open"))
+  (lmdb-open-db env "kunabi-lmdb" lmdb-create: #t))
 
 (def (ensure-db)
   (unless db
     (set! db (db-open))))
 
-(def (db-open)
-  (dp ">-- db-open")
-  (let ((db-dir (or (getenv "kunabidb" #f) (format "~a/kunabi-db/" (user-info-home (user-info (user-name)))))))
-    (dp (format "db-dir is ~a" db-dir))
-    (unless (file-exists? db-dir)
-      (create-directory* db-dir))
-    (let ((location (format "~a/records" db-dir)))
-      (leveldb-open location (leveldb-options
-                              paranoid-checks: #f
-                              max-open-files: (def-num (getenv "k_max_files" #f))
-                              bloom-filter-bits: (def-num (getenv "k_bloom_bits" #f))
-                              compression: #t
-                              block-size: (def-num (getenv "k_block_size" #f))
-                              write-buffer-size: (def-num (getenv "k_write_buffer" (* 1024 1024 16)))
-                              lru-cache-capacity: (def-num (getenv "k_lru_cache" 1000)))))))
-
-(def (db-get key)
-  (dp (format "db-get: ~a" key))
-  (let ((ret (leveldb-get db (format "~a" key))))
-    (if (u8vector? ret)
-      (u8vector->object ret)
-      "N/A")))
-
 (def (db-key? key)
   (dp (format ">-- db-key? with ~a" key))
-  (leveldb-key? db (format "~a" key)))
-
-(def (db-write)
-  (dp "in db-write")
-  (leveldb-write db wb))
+  (lmdb-get db (format "~a" key)))
 
 (def (db-close)
   (dp "in db-close")
-  (leveldb-close db))
+  (lmdb-close-db db)
+  (lmdb-close env))
 
 (def (db-init)
-  (dp "in db-init")
-  (leveldb-writebatch))
+  (lmdb-open "~/kunabi-lmdb" mapsize: 1000000000))
 
+(def (db-get key)
+  (let (txn (lmdb-txn-begin env))
+    (try
+     (let* ((bytes (lmdb-get txn db key))
+	          (val (if bytes
+		               (call-with-input-u8vector (uncompress bytes) read-json)
+		               nil)))
+       (lmdb-txn-commit txn)
+       val)
+     (catch (e)
+       (lmdb-txn-abort txn)
+       (display e)
+       (displayln "error kunabi-store-get: key:" key)
+       ;;(raise e)
+       ))))
 
-;; leveldb stuff
-(def (get-leveldb key)
-  (displayln "get-leveldb: " key)
-  (try
-   (let* ((bytes (leveldb-get db (format "~a" key)))
-          (val (if (u8vector? bytes)
-                 (u8vector->object bytes)
-                 nil)))
-     val)
-   (catch (e)
-     (raise e))))
+(def (db-put key val)
+  (let (txn (lmdb-txn-begin env))
+    (try
+     (lmdb-put txn db key (compress (call-with-output-bytes (lambda (port) (write-json val port))))))
+     (lmdb-txn-commit txn)
+     (catch (e)
+       (lmdb-txn-abort txn)
+       (display e)
+       (displayln "error kunabi-store-put: key:" key " val:" val)
+       ;;(raise e)
+       )))
 
-(def (remove-leveldb key)
-  (dp (format "remove-leveldb: ~a" key)))
-
-(def (compact)
-  "Compact some stuff"
-  (let* ((itor (leveldb-iterator db))
-         (first (get-first-key))
-         (last (get-last-key)))
-    (displayln "First: " first " Last: " last)
-    (leveldb-compact-range db first last)))
-
-(def (count-key key)
-  "Get a count of how many records are in db"
-  (let ((itor (leveldb-iterator db)))
-    (leveldb-iterator-seek-first itor)
-    (let lp ((count 0))
-      (leveldb-iterator-next itor)
-      (if (leveldb-iterator-valid? itor)
-        (begin
-          (if (pregexp-match key (utf8->string (leveldb-iterator-key itor)))
-            (begin
-              (displayln (format "Found one ~a" (utf8->string (leveldb-iterator-key itor))))
-              (lp (1+ count)))
-            (lp count)))
-        count))))
-
-(def (countdb)
-  "Get a count of how many records are in db"
-  (let ((itor (leveldb-iterator db)))
-    (leveldb-iterator-seek-first itor)
-    (let lp ((count 1))
-      (leveldb-iterator-next itor)
-      (if (leveldb-iterator-valid? itor)
-        (lp (1+ count))
-        count))))
-
-(def (repairdb)
-  "Repair the db"
-  (let ((db-dir (format "~a/kunabi-db/" (user-info-home (user-info (user-name))))))
-    (leveldb-repair-db (format "~a/records" db-dir))))
 
 (def (def-num num)
   (if (string? num)
