@@ -103,7 +103,7 @@
 ;;         res))))
 
 (def (sort-uniq-reverse lst)
-   (reverse (unique! (sort! lst eq?))))
+  (reverse (unique! (sort! lst eq?))))
 
 ;; (def (index)
 ;;   (index-user)
@@ -145,48 +145,51 @@
 ;;         entries))))
 
 ;; error codes
-(def (lec)
-  (for-each displayln (list-errorCodes)))
+;; (def (lec)
+;;   (for-each displayln (list-errorCodes)))
 
-(def (index-errorCode)
-  (db-put "event!errorCode" (list-errorCodes)))
+;; (def (index-errorCode)
+;;   (db-put "event!errorCode" (list-errorCodes)))
 
-(def (list-errorCodes)
-  (let (index "event!errorCode")
-    (if (db-key? index)
-      (db-get index)
-      (let (entries
-            (sort-uniq-reverse
-             (uniq-by-mid-prefix "errorCode")))
-        (db-put index entries)
-        entries))))
+;; (def (list-errorCodes)
+;;   (let (index "event!errorCode")
+;;     (if (db-key? index)
+;;       (db-get index)
+;;       (let (entries
+;;             (sort-uniq-reverse
+;;              (uniq-by-mid-prefix "errorCode")))
+;;         (db-put index entries)
+;;         entries))))
 
-(def (match-key key)
-  (resolve-records (resolve-by-key key)))
+;; (def (match-key key)
+;;   (resolve-records (resolve-by-key key)))
 
-(def (report user)
-  (displayln "** Total by Source IP")
-  (tally-by-ip
-   (resolve-by-key
-    (format "user#~a#" user)))
-  (displayln "** Total by Event Name")
-  (tally-by-en
-   (resolve-by-key
-    (format "user#~a#" user))))
+;; (def (report user)
+;;   (displayln "** Total by Source IP")
+;;   (tally-by-ip
+;;    (resolve-by-key
+;;     (format "user#~a#" user)))
+;;   (displayln "** Total by Event Name")
+;;   (tally-by-en
+;;    (resolve-by-key
+;;     (format "user#~a#" user))))
 
-(def (reports)
-  (for (user (list-users))
-    (displayln (format "*** ~A" user))
-    (report user)))
+;; (def (reports)
+;;   (for (user (list-users))
+;;     (displayln (format "*** ~A" user))
+;;     (report user)))
 
-(def (sn key)
-  (match-key (format "user#~a#" key)))
+;; (def (sn key)
+;;   (match-key (format "user#~a#" key)))
 
-(def (se key)
-  (match-key (format "eventName#~a#" key)))
+;; (def (se key)
+;;   (match-key (format "eventName#~a#" key)))
 
-(def (sec key)
-  (match-key (format "errorCode#~a#" key)))
+;; (def (sec key)
+;;   (match-key (format "errorCode#~a#" key)))
+
+(def (countdb)
+  (format "no"))
 
 (def (st)
   (displayln "Totals: "
@@ -479,6 +482,10 @@
 
 ;; lmdb stuff
 
+(def (db-write)
+  (dp (format "in db-write"))
+  )
+
 (def (db-open)
   (dp (format "in db-open"))
   (lmdb-open-db env "kunabi-lmdb" lmdb-create: #t))
@@ -518,15 +525,18 @@
 (def (db-put key val)
   (let (txn (lmdb-txn-begin env))
     (try
-     (lmdb-put txn db key (compress (call-with-output-bytes (lambda (port) (write-json val port))))))
-     (lmdb-txn-commit txn)
+     (begin
+       (lmdb-put txn db key (compress (call-with-output-bytes (lambda (port) (write-json val port)))))
+       (lmdb-txn-commit txn))
      (catch (e)
-       (lmdb-txn-abort txn)
-       (display e)
-       (displayln "error kunabi-store-put: key:" key " val:" val)
-       ;;(raise e)
-       )))
+      (lmdb-txn-abort txn)
+      (display e)
+      (displayln "error kunabi-store-put: key:" key " val:" val)))
+      ;;(raise e)
+      ))
 
+(def (db-batch key val)
+  (db-put key val))
 
 (def (def-num num)
   (if (string? num)
