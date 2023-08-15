@@ -486,9 +486,12 @@
   (dp (format "in db-write"))
   )
 
+(def (db-init)
+  (lmdb-open "/tmp/test.db" mapsize: 1000000000))
+
 (def (db-open)
   (dp (format "in db-open"))
-  (lmdb-open-db env "kunabi-lmdb" lmdb-create: #t))
+  (lmdb-open-db env "kunabi"))
 
 (def (ensure-db)
   (unless db
@@ -496,15 +499,12 @@
 
 (def (db-key? key)
   (dp (format ">-- db-key? with ~a" key))
-  (lmdb-get db (format "~a" key)))
+  (lmdb-get env db (format "~a" key)))
 
 (def (db-close)
   (dp "in db-close")
   (lmdb-close-db db)
   (lmdb-close env))
-
-(def (db-init)
-  (lmdb-open "~/kunabi-lmdb" mapsize: 1000000000))
 
 (def (db-get key)
   (let (txn (lmdb-txn-begin env))
