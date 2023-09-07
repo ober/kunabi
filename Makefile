@@ -1,6 +1,6 @@
 PROJECT := kunabi
 
-DOCKER_IMAGE := "gerbil/alpine:latest"
+DOCKER_IMAGE := "gerbil/alpine:x86_64"
 
 $(eval UID := $(shell id -u))
 $(eval GID := $(shell id -g))
@@ -25,7 +25,6 @@ linux-static: build
 	/opt/gerbil/bin/gxc -o $(PROJECT)-bin -static  -O \
 	-cc-options "-Bstatic" \
 	-ld-options "-static -lpthread -lleveldb -ldl -lyaml -lz -lstdc++" \
-	-prelude "(declare (not safe))" \
 	-exe $(PROJECT)/main.ss
 
 clean:
