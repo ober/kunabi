@@ -5,6 +5,6 @@
 
 (defbuild-script
   `("kunabi/cloudtrail"
-    (static-exe:
+    (exe:
      "kunabi/main"
      bin: "kunabi")))
