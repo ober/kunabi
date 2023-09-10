@@ -5,6 +5,9 @@
 
 (defbuild-script
   `("kunabi/cloudtrail"
-    (exe:
+    (static-exe:
      "kunabi/main"
-     bin: "kunabi")))
+     bin: "kunabi"
+     "-ld-options"
+     "-lleveldb -lyaml -lz"
+     )))

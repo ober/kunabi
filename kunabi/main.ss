@@ -25,7 +25,7 @@
 ;;  :ober/kunabi/vpc
   )
 
-(declare (not optimize-dead-definitions))
+;;(declare (not optimize-dead-definitions))
 (export main)
 
 (def program-name "kunabi")

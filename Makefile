@@ -1,9 +1,7 @@
 PROJECT := kunabi
 
-DOCKER_IMAGE := "gerbil/alpine:x86_64"
-
-$(eval UID := $(shell id -u))
-$(eval GID := $(shell id -g))
+ARCH	     := $(shell uname)
+DOCKER_IMAGE := "gerbil/alpine:$(ARCH)"
 
 default: linux-static-docker
 
@@ -16,15 +14,15 @@ build: deps
 
 linux-static-docker:
 	docker run -it \
-	-e GERBIL_PATH=/tmp/.gerbil \
+	-e GERBIL_PATH=/src/.gerbil \
 	-v $(PWD):/src:Z \
 	$(DOCKER_IMAGE) \
-	make -C /src linux-static
+	make -C /src build
 
 linux-static: build
 	/opt/gerbil/bin/gxc -o $(PROJECT)-bin -static  -O \
 	-cc-options "-Bstatic" \
-	-ld-options "-static -lpthread -lleveldb -ldl -lyaml -lz -lstdc++" \
+	-ld-options "-static -lpthread -lleveldb -lyaml -lz" \
 	-exe $(PROJECT)/main.ss
 
 clean:

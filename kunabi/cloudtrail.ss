@@ -24,7 +24,7 @@
  :std/text/zlib
  :ober/oberlib)
 
-(declare (not optimize-dead-definitions))
+;;(declare (not optimize-dead-definitions))
 
 (def version "0.08")
 
