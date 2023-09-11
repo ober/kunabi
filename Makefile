@@ -1,7 +1,7 @@
 PROJECT := kunabi
 
 ARCH	     := $(shell uname -m)
-DOCKER_IMAGE := "gerbil/alpine:$(ARCH)"
+DOCKER_IMAGE := "gerbil/gerbilxx:$(ARCH)"
 
 default: linux-static-docker
 
