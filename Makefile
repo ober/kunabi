@@ -19,14 +19,8 @@ linux-static-docker:
 	$(DOCKER_IMAGE) \
 	make -C /src build
 
-linux-static: build
-	/opt/gerbil/bin/gxc -o $(PROJECT)-bin -static  -O \
-	-cc-options "-Bstatic" \
-	-ld-options "-static -lpthread -lleveldb -lyaml -lz" \
-	-exe $(PROJECT)/main.ss
-
 clean:
-	rm -f $(PROJECT)-bin
+	rm -rf .gerbil
 
 install:
-	mv $(PROJECT)-bin /usr/local/bin/$(PROJECT)
+	mv .gerbil/bin/$(PROJECT) /usr/local/bin/$(PROJECT)

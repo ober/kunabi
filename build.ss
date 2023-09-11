@@ -7,7 +7,4 @@
   `("kunabi/cloudtrail"
     (static-exe:
      "kunabi/main"
-     bin: "kunabi"
-     "-ld-options"
-     "-lleveldb -lyaml -lz"
-     )))
+     bin: "kunabi")))
