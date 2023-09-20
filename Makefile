@@ -3,36 +3,26 @@ PROJECT := kunabi
 ARCH := $(shell uname -m)
 DOCKER_IMAGE := "gerbil/gerbilxx:$(ARCH)"
 
-$(eval UID := $(shell id -u))
-$(eval GID := $(shell id -g))
-
 default: linux-static-docker
 
 deps:
-	$(GERBIL_HOME)/bin/gxpkg install github.com/ober/oberlib
-	$(GERBIL_HOME)/bin/gxpkg install github.com/yanndegat/colorstring
+	/opt/gerbil/bin/gxpkg install github.com/ober/oberlib
+	/opt/gerbil/bin/gxpkg install github.com/yanndegat/colorstring
 
 build: deps
-	$(GERBIL_HOME)/bin/gxpkg link $(PROJECT) /src || true
-	$(GERBIL_HOME)/bin/gxpkg build $(PROJECT)
+	/opt/gerbil/bin/gxpkg link $(PROJECT) /src || true
+	/opt/gerbil/bin/gxpkg build $(PROJECT)
 
 linux-static-docker:
 	docker run -it \
 	-e GERBIL_PATH=/src/.gerbil \
-	-u "$(UID):$(GID)" \
-    -v $(PWD):/src:z \
+	-e USER=$(USER) \
+	-v $(PWD):/src:z \
 	$(DOCKER_IMAGE) \
-	make -C /src linux-static
-
-linux-static: build
-	$(GERBIL_HOME)/bin/gxc -o $(PROJECT)-bin -static -O \
-	-cc-options "-Bstatic" \
-	-ld-options "-static -lpthread -L/usr/lib/x86_64-linux-gnu -lleveldb -lssl -ldl -lyaml -lz -lstdc++" \
-	-prelude "(declare (not safe))" \
-	-exe $(PROJECT)/$(PROJECT).ss
+	make -C /src build
 
 clean:
-	rm -Rf $(PROJECT)-bin
+	rm -rf .gerbil
 
 install:
-	mv $(PROJECT)-bin /usr/local/bin/$(PROJECT)
+	mv ~/.gerbil/bin/$(PROJECT) /usr/local/bin/$(PROJECT)
