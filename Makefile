@@ -1,6 +1,7 @@
 PROJECT := kunabi
 
-DOCKER_IMAGE := "gerbil/fedora:smp-debugging"
+ARCH := $(shell uname -m)
+DOCKER_IMAGE := "gerbil/gerbilxx:$(ARCH)"
 
 $(eval UID := $(shell id -u))
 $(eval GID := $(shell id -g))
