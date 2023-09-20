@@ -5,8 +5,5 @@
 
 (defbuild-script
   `("kunabi/client"
-    (exe:
-     "kunabi/kunabi"
-     "-ld-options"
-     "-lpthread -lleveldb -lyaml -ldl -lssl -lz -L/usr/lib64 -L/usr/pkg/lib -I/usr/pkg/include"
-     "-prelude" "(declare (not safe))")))
+    (static-exe:
+     "kunabi/kunabi")))
