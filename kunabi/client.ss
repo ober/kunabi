@@ -4,8 +4,6 @@
 
 (import
   :gerbil/gambit
-  :gerbil/gambit/os
-  :gerbil/gambit/threads
   :std/actor
   :std/db/dbi
   :std/db/postgresql
@@ -26,7 +24,7 @@
   :std/srfi/95
   :std/sugar
   :std/text/json
-  :std/text/yaml
+  :clan/text/yaml
   :std/text/zlib
   :ober/oberlib)
 
