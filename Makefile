@@ -11,7 +11,7 @@ deps:
 
 build: deps
 	/opt/gerbil/bin/gxpkg link $(PROJECT) /src || true
-	/opt/gerbil/bin/gxpkg build $(PROJECT)
+	/opt/gerbil/bin/gxpkg build -R $(PROJECT)
 
 linux-static-docker:
 	docker run -it \
