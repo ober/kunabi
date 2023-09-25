@@ -13,7 +13,7 @@ build: deps
 	/opt/gerbil/bin/gxpkg link $(PROJECT) /src || true
 	/opt/gerbil/bin/gxpkg build -R $(PROJECT)
 
-linux-static-docker:
+linux-static-docker: clean
 	docker run -it \
 	-e GERBIL_PATH=/src/.gerbil \
 	-e USER=$(USER) \
