@@ -26,7 +26,7 @@
   :std/srfi/95
   :std/sugar
   :std/text/json
-  :std/text/yaml
+  :clan/text/yaml
   :std/text/zlib
   )
 
