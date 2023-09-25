@@ -5,5 +5,8 @@
 
 (defbuild-script
   `("kunabi/client"
-    (static-exe:
-     "kunabi/kunabi")))
+    (exe:
+     "kunabi/kunabi"
+     "-ld-options"
+     "-lyaml -lleveldb"
+     )))
