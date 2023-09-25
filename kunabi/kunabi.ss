@@ -3,15 +3,14 @@
 ;;; AWS Cloudwatch parser library
 
 (import
+  :clan/db/leveldb
   :gerbil/gambit
-  :gerbil/gambit/os
-  :gerbil/gambit/threads
+  :ober/kunabi/client
+  :ober/oberlib
   :std/actor
   :std/db/dbi
   :std/db/postgresql
   :std/db/postgresql-driver
-  ;;:std/db/lmdb
-  :std/db/leveldb
   :std/debug/heap
   :std/debug/memleak
   :std/format
@@ -29,8 +28,6 @@
   :std/text/json
   :std/text/yaml
   :std/text/zlib
-  :ober/oberlib
-  :ober/kunabi/client
   )
 
 (export main)
