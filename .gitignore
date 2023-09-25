@@ -7,3 +7,4 @@ tmp/
 *.scm
 *~
 build-deps
+manifest.ss
