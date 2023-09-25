@@ -7,6 +7,7 @@ default: linux-static-docker
 
 deps:
 	/opt/gerbil/bin/gxpkg install github.com/ober/oberlib
+	/opt/gerbil/bin/gxpkg deps -i
 	/opt/gerbil/bin/gxpkg install github.com/yanndegat/colorstring
 
 build: deps
