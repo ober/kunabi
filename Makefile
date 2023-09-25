@@ -6,9 +6,7 @@ DOCKER_IMAGE := "gerbil/gerbilxx:$(ARCH)"
 default: linux-static-docker
 
 deps:
-	/opt/gerbil/bin/gxpkg install github.com/ober/oberlib
 	/opt/gerbil/bin/gxpkg deps -i
-	/opt/gerbil/bin/gxpkg install github.com/yanndegat/colorstring
 
 build: deps
 	/opt/gerbil/bin/gxpkg link $(PROJECT) /src || true
