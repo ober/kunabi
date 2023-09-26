@@ -9,5 +9,5 @@
      "kunabi/main"
      bin: "kunabi"
      "-ld-options"
-     "-lyaml -lleveldb"
+     "-lyaml -lleveldb -lstdc++"
      )))
