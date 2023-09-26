@@ -6,7 +6,7 @@ DOCKER_IMAGE := "gerbil/gerbilxx:$(ARCH)"
 default: linux-static-docker
 
 deps:
-	/opt/gerbil/bin/gxpkg deps -a
+	/opt/gerbil/bin/gxpkg deps -i
 
 build: deps
 	/opt/gerbil/bin/gxpkg link $(PROJECT) /src || true
