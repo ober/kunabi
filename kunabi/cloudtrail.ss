@@ -5,7 +5,7 @@
 (import
  :gerbil/gambit
  :std/text/utf8
- :std/db/leveldb
+ :clan/db/leveldb
  :std/debug/heap
  :std/debug/memleak
  :std/format
@@ -26,7 +26,7 @@
 
 (def version "0.08")
 
-(export #t)
+(export #t)as
 
 (def db-type leveldb:)
 (def nil '#(nil))
