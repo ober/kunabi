@@ -4,7 +4,7 @@
 
 (import
   :gerbil/gambit
-  :std/db/leveldb
+  :clan/db/leveldb
   :std/debug/heap
   :std/debug/memleak
   :std/format
