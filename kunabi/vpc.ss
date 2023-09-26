@@ -10,7 +10,7 @@
   :std/db/dbi
   :std/db/postgresql
   :std/db/postgresql-driver
-  :std/db/leveldb
+  :clan/db/leveldb
   :std/debug/heap
   :std/debug/memleak
   :std/format
