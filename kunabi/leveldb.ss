@@ -4,8 +4,6 @@
 
 (import
   :gerbil/gambit
-  :gerbil/gambit/os
-  :gerbil/gambit/threads
   :std/actor
   :std/db/dbi
   :std/db/postgresql

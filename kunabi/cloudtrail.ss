@@ -4,8 +4,6 @@
 
 (import
  :gerbil/gambit
- :gerbil/gambit/os
- :gerbil/gambit/threads
  :std/text/utf8
  :std/db/leveldb
  :std/debug/heap
@@ -20,7 +18,7 @@
  :std/srfi/95
  :std/sugar
  :std/text/json
- :std/text/yaml
+ :clan/text/yaml
  :std/text/zlib
  :ober/oberlib)
 
