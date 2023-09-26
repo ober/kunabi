@@ -6,11 +6,11 @@ DOCKER_IMAGE := "gerbil/gerbilxx:$(ARCH)"
 default: linux-static-docker
 
 deps:
-	/opt/gerbil/bin/gxpkg install github.com/ober/oberlib
+	/opt/gerbil/bin/gxpkg deps -a
 
 build: deps
 	/opt/gerbil/bin/gxpkg link $(PROJECT) /src || true
-	/opt/gerbil/bin/gxpkg build $(PROJECT)
+	/opt/gerbil/bin/gxpkg build -R $(PROJECT)
 
 linux-static-docker: clean
 	docker run -it \
