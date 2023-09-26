@@ -26,7 +26,7 @@
 
 (def version "0.08")
 
-(export #t)as
+(export #t)
 
 (def db-type leveldb:)
 (def nil '#(nil))
