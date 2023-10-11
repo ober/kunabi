@@ -1,9 +1,9 @@
 PROJECT := kunabi
 
-ARCH	     := $(shell uname -m)
+ARCH := $(shell uname -m)
 DOCKER_IMAGE := "gerbil/gerbilxx:$(ARCH)"
-UID 	:= $(shell id -u)
-GID	:= $(shell id -g)
+UID := $(shell id -u)
+GID := $(shell id -g)
 
 default: linux-static-docker
 
@@ -12,7 +12,7 @@ deps:
 
 build: deps
 	/opt/gerbil/bin/gxpkg link $(PROJECT) /src || true
-	/opt/gerbil/bin/gxpkg build -R -O $(PROJECT)
+	/opt/gerbil/bin/gxpkg build -R $(PROJECT)
 
 linux-static-docker: clean
 	docker run -it \
