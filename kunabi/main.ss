@@ -81,9 +81,9 @@
     (command 'st help: "Show status"))
   (def repairdb
     (command 'repairdb help: "repairdb"))
-  ;; (def report
-  ;;   (command 'report help: "report"))
-
+  (def report
+    (command 'report help: "report"
+	     (argument 'user help: "username")))
 
   (call-with-getopt process-args args
 		    program: "kunabi"
@@ -100,7 +100,7 @@
 ;;		    lsv
 		    read
 		    repairdb
-;;		    report
+		    report
 		    se
 		    sec
 ;;		    sip
@@ -137,8 +137,8 @@
        (read .file))
       ((repairdb)
        (repairdb))
-      ;; ((report)
-      ;;  (report))
+      ((report)
+       (report .user))
       ((se)
        (se .event))
       ((sec)
