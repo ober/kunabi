@@ -60,8 +60,10 @@
   (def read
     (command 'read help: "read in ct file"
 	     (argument 'file)))
-   ("se" (hash (description: "se <event name> => list all records of type event name") (usage: "read <file>") (count: 1)))
-   ("sec" (hash (description: "sec <error coded> => list all records of error code") (usage: "sec <error code>") (count: 1)))
+  (def se
+    (command 'se help: "Search for event name"
+	     (command 'event help: "Event to search for")))
+  ("sec" (hash (description: "sec <error coded> => list all records of error code") (usage: "sec <error code>") (count: 1)))
    ("sip" (hash (description: "sip <ip address> => list all records from ip address") (usage: "sip <ip address>") (count: 1)))
    ("sn" (hash (description: "sn <user name> => list all records for user name") (usage: "sn <username>") (count: 1)))
    ("sr" (hash (description: "sr <Region name> => list all records for region name") (usage: "sr <region name>") (count: 1)))
