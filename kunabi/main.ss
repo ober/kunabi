@@ -3,14 +3,25 @@
 ;;; AWS Cloudwatch parser library
 
 (import
-  :gerbil/gambit
   :clan/db/leveldb
+  :gerbil/gambit
+  :ober/kunabi/cloudtrail
+  :ober/oberlib
+  :std/actor
+  :std/db/dbi
+  :std/db/postgresql
+  :std/db/postgresql-driver
+  :std/getopt
   :std/debug/heap
   :std/debug/memleak
   :std/format
   :std/generic/dispatch
   :std/iter
+  :std/logger
   :std/misc/list
+  :std/misc/lru
+  :std/net/address
+  :std/net/httpd
   :std/pregexp
   :std/srfi/1
   :std/srfi/95
@@ -18,71 +29,125 @@
   :std/text/json
   :clan/text/yaml
   :std/text/zlib
-  :ober/oberlib
-  :ober/kunabi/cloudtrail
-;;  :ober/kunabi/vpc
   )
 
-(declare (not optimize-dead-definitions))
 (export main)
-
 (def program-name "kunabi")
 
-(def interactives
-  (hash
-   ("ct" (hash (description: "ct <directory> => Load all files in dir. ") (usage: "") (count: 1)))
-   ("compact" (hash (description: "Compact ") (usage: "compact") (count: 0)))
-   ("countdb" (hash (description: "Count how many db entries there are ") (usage: "count") (count: 0)))
-   ("count-key" (hash (description: "Count how many db entries there are for key ") (usage: "count-key <key>") (count: 1)))
-   ("match-key" (hash (description: "Count how many db entries there are for key ") (usage: "match-key <key>") (count: 1)))
-   ("le" (hash (description: "List all event names. ") (usage: "le") (count: 0)))
-   ("lec" (hash (description: "lec => List all Error Codes") (usage: "lec") (count: 0)))
-   ("lip" (hash (description: "lip => List all source ips") (usage: "lip") (count: 0)))
-   ("ln" (hash (description: "ln => List all user names. ") (usage: "ln") (count: 0)))
-   ("lr" (hash (description: "lr => List all Regions") (usage: "lr") (count: 0)))
-   ("ls" (hash (description: "ls => list all records") (usage: "ls") (count: 0)))
-   ("lsv" (hash (description: "lsv => list all vpc records") (usage: "lsv") (count: 0)))
-   ("read" (hash (description: "read <file> => read in ct file") (usage: "read <file>") (count: 1)))
-   ("se" (hash (description: "se <event name> => list all records of type event name") (usage: "read <file>") (count: 1)))
-   ("sec" (hash (description: "sec <error coded> => list all records of error code") (usage: "sec <error code>") (count: 1)))
-   ("sip" (hash (description: "sip <ip address> => list all records from ip address") (usage: "sip <ip address>") (count: 1)))
-   ("sn" (hash (description: "sn <user name> => list all records for user name") (usage: "sn <username>") (count: 1)))
-   ("sr" (hash (description: "sr <Region name> => list all records for region name") (usage: "sr <region name>") (count: 1)))
-   ("st" (hash (description: "st: Status") (usage: "sr") (count: 0)))
-   ("repairdb" (hash (description: "repairdb") (usage: "repairdb") (count: 0)))
-   ("report" (hash (description: "report") (usage: "report <username>") (count: 1)))
-   ("reports" (hash (description: "reports") (usage: "reports") (count: 0)))
-   ("index" (hash (description: "index") (usage: "index") (count: 0)))
-   ))
-
 (def (main . args)
-  (if (null? args)
-    (usage))
-  (let* ((argc (length args))
-	 (verb (car args))
-	 (args2 (cdr args)))
-    (unless (hash-key? interactives verb)
-      (usage))
-    (let* ((info (hash-get interactives verb))
-	   (count (hash-get info count:)))
-      (unless count
-	(set! count 0))
-      (unless (= (length args2) count)
-	(usage-verb verb))
-      (apply (eval (string->symbol (string-append "ober/kunabi/cloudtrail#" verb))) args2)))
-  (when db (db-close))
-  )
 
-(def (usage-verb verb)
-  (let ((howto (hash-get interactives verb)))
-    (displayln "Wrong number of arguments. Usage is:")
-    (displayln program-name " " (hash-get howto usage:))
-    (exit 2)))
+  (def ct
+    (command 'ct help: "Load all files in dir. "
+	     (argument 'directory help: "Directory where the Cloudtrail files reside")))
 
-(def (usage)
-  (displayln (format "Kunabi: version ~a" version))
-  (displayln "Usage: kunabi <verb>")
-  (displayln "Verbs:")
-  (for (verb (sort! (hash-keys interactives) string<?))
-       (displayln (format "~a: ~a" verb (hash-get (hash-get interactives verb) description:))))
-  (exit 2))
+  (def compact
+    (command 'compact help: "Compact"))
+
+  (def countdb
+    (command 'countdb help: "Count how many db entries there are "))
+  (def le
+    (command 'le help: "List all event names. "))
+  (def lec
+    (command 'lec help: "List all Error Codes"))
+  ;; (def lip
+  ;;   (command 'lip help: "List all source ips"))
+  (def ln
+    (command 'ln help: "List all user names. "))
+  ;; (def lr
+  ;;   (command 'lr help: "List all Regions"))
+  (def ls
+    (command 'ls help: "list all records"))
+  ;; (def lsv
+  ;;   (command 'lsv help: "list all vpc records"))
+  (def read
+    (command 'read help: "read in ct file"
+	     (argument 'file)))
+  (def se
+    (command 'se help: "Search for event name"
+	     (argument 'event)))
+  (def sec
+    (command 'sec help: "list all records of error code"
+	     (argument 'event)))
+  ;; (def sip
+  ;;   (command 'sip help: "list all records from ip address"
+  ;; 	     (argument 'event help: "Ip address")))
+  (def sn
+    (command 'sn help: "list all records for user name"
+	     (argument 'event help: "username")))
+  ;; (def sr
+  ;;   (command 'sr help: "list all records for region name"
+  ;; 	     (argument 'event help: "region")))
+  (def st
+    (command 'st help: "Show status"))
+  (def repairdb
+    (command 'repairdb help: "repairdb"))
+  ;; (def report
+  ;;   (command 'report help: "report"))
+
+
+  (call-with-getopt process-args args
+		    program: "kunabi"
+		    help: "Cloudtrail parser in Gerbil"
+		    ct
+		    compact
+		    countdb
+		    le
+		    lec
+;;		    lip
+		    ln
+;;		    lr
+		    ls
+;;		    lsv
+		    read
+		    repairdb
+;;		    report
+		    se
+		    sec
+;;		    sip
+		    sn
+;;		    sr
+		    st))
+
+
+
+(def (process-args cmd opt)
+  (let-hash opt
+    (case cmd
+      ((ct)
+       (ct .directory))
+      ((compact)
+       (compact))
+      ((countdb)
+       (countdb))
+      ((le)
+       (le))
+      ((lec)
+       (lec))
+      ;; ((lip)
+      ;;  (lip))
+      ((ln)
+       (ln))
+      ;; ((lr)
+      ;;  (lr))
+      ((ls)
+       (ls))
+      ;; ((lsv)
+      ;;  (lsv))
+      ((read)
+       (read .file))
+      ((repairdb)
+       (repairdb))
+      ;; ((report)
+      ;;  (report))
+      ((se)
+       (se .event))
+      ((sec)
+       (sec .event))
+      ;; ((sip)
+      ;;  (sip .event))
+      ((sn)
+       (sn .event))
+      ((sr)
+       (sr .event))
+      ((st)
+      (st)))))
