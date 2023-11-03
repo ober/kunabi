@@ -17,7 +17,6 @@ build: deps
 linux-static-docker: clean
 	docker run -it \
 	-e GERBIL_PATH=/src/.gerbil \
-	-u "$(UID):$(GID)" \
 	-e USER=$(USER) \
 	-v $(PWD):/src:Z \
 	$(DOCKER_IMAGE) \
