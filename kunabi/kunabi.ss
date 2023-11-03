@@ -31,24 +31,35 @@
   )
 
 (export main)
-
-(declare (not optimize-dead-definitions))
-
 (def program-name "kunabi")
 
-(def interactives
-  (hash
-   ("ct" (hash (description: "ct <directory> => Load all files in dir. ") (usage: "") (count: 1)))
-   ("compact" (hash (description: "Compact ") (usage: "compact") (count: 0)))
-   ("countdb" (hash (description: "Count how many db entries there are ") (usage: "count") (count: 0)))
-   ("le" (hash (description: "List all event names. ") (usage: "le") (count: 0)))
-   ("lec" (hash (description: "lec => List all Error Codes") (usage: "lec") (count: 0)))
-   ("lip" (hash (description: "lip => List all source ips") (usage: "lip") (count: 0)))
-   ("ln" (hash (description: "ln => List all user names. ") (usage: "ln") (count: 0)))
-   ("lr" (hash (description: "lr => List all Regions") (usage: "lr") (count: 0)))
-   ("ls" (hash (description: "ls => list all records") (usage: "ls") (count: 0)))
-   ("lsv" (hash (description: "lsv => list all vpc records") (usage: "lsv") (count: 0)))
-   ("read" (hash (description: "read <file> => read in ct file") (usage: "read <file>") (count: 1)))
+(def (main . args)
+  (def ct
+    (command 'ct help: "Load all files in dir. "
+	     (argument 'directory help: "Directory where the Cloudtrail files reside")))
+
+  (def compact
+    (command 'compact help: (hash "Compact")))
+
+  (def countdb
+    (command 'countdb help: "Count how many db entries there are "))
+  (def le
+    (command 'le help: "List all event names. "))
+  (def lec
+    (command 'lec help: "List all Error Codes"))
+  (def lip
+    (command 'lip help: "List all source ips"))
+  (def ln
+    (command 'ln help: "List all user names. "))
+  (def lr
+    (command 'lr help: "List all Regions"))
+  (def ls
+    (command 'ls help: "list all records"))
+  (def lsv
+    (command 'lsv help: "list all vpc records"))
+  (def read
+    (command 'read help: "read in ct file"
+	     (argument 'file)))
    ("se" (hash (description: "se <event name> => list all records of type event name") (usage: "read <file>") (count: 1)))
    ("sec" (hash (description: "sec <error coded> => list all records of error code") (usage: "sec <error code>") (count: 1)))
    ("sip" (hash (description: "sip <ip address> => list all records from ip address") (usage: "sip <ip address>") (count: 1)))
@@ -59,21 +70,13 @@
    ("report" (hash (description: "report") (usage: "report") (count: 0)))
    ))
 
-(def (main . args)
-  (if (null? args)
-    (usage))
-  (let* ((argc (length args))
-	 (verb (car args))
-	 (args2 (cdr args)))
-    (unless (hash-key? interactives verb)
-      (usage))
-    (let* ((info (hash-get interactives verb))
-	   (count (hash-get info count:)))
-      (unless count
-	(set! count 0))
-      (unless (= (length args2) count)
-	(usage-verb verb))
-      (apply (eval (string->symbol (string-append "ober/kunabi/client#" verb))) args2)))
+  (call-with-getopt process-args args
+program: "kunabi"
+help: "Cloudtrail parser in Gerbil"
+
+
+
+
   (db-close)
   )
 
