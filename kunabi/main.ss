@@ -45,12 +45,18 @@
 
   (def countdb
     (command 'countdb help: "Count how many db entries there are "))
+
+  (def index
+    (command 'index help: "Index user, errocode, events"))
+
   (def le
     (command 'le help: "List all event names. "))
+
   (def lec
     (command 'lec help: "List all Error Codes"))
   ;; (def lip
   ;;   (command 'lip help: "List all source ips"))
+
   (def ln
     (command 'ln help: "List all user names. "))
   ;; (def lr
@@ -91,6 +97,7 @@
 		    ct
 		    compact
 		    countdb
+		    index
 		    le
 		    lec
 ;;		    lip
@@ -119,6 +126,8 @@
        (compact))
       ((countdb)
        (countdb))
+      ((index)
+       (index))
       ((le)
        (le))
       ((lec)
