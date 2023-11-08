@@ -133,7 +133,7 @@
 (def (index-event)
   (let ((index "event!index"))
     (db-rm index)
-    (db-put index (list-events)))
+    (db-put index (list-events))))
 
 (def (list-events)
   (let (index "event!index")
