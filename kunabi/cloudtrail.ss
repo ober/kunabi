@@ -490,7 +490,7 @@
   (leveldb-put db key (object->u8vector value)))
 
 (def (db-rm key)
-  (dp (format "<----> db-rm: key: ~a"))
+  (dp (format "<----> db-rm: key: ~a" key))
   (leveldb-delete db key))
 
 (def (ensure-db)
