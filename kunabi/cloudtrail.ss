@@ -513,6 +513,26 @@
 			      write-buffer-size: (def-num (getenv "k_write_buffer" (* 1024 1024 16)))
 			      lru-cache-capacity: (def-num (getenv "k_lru_cache" 1000)))))))
 
+(def (db-copy src dst)
+  "Copy all item from src to dst"
+  (let* ((src-db (leveldb-open (format "~a/records" src)))
+	 (itor (leveldb-iterator src-db))
+	 (dst-db (leveldb-open (format "~a/records" dst))))
+    (leveldb-iterator-seek-first itor)
+    (let lp ()
+      (let ((key (utf8->string (leveldb-iterator-key itor)))
+            (val (leveldb-iterator-value itor)))
+	(if (leveldb-key? dst-db (format "~a" key))
+	  (dp (format "~a key already exists in dst" key))
+	  (leveldb-put dst-db key val))
+	(leveldb-delete src-db key))
+      (leveldb-iterator-next itor)
+      (if (leveldb-iterator-valid? itor)
+	(lp)
+	(begin
+	  (leveldb-close src-db)
+	  (leveldb-close dst-db))))))
+
 (def (db-get key)
   (dp (format "db-get: ~a" key))
   (let ((ret (leveldb-get db (format "~a" key))))
@@ -535,7 +555,6 @@
 (def (db-init)
   (dp "in db-init")
   (leveldb-writebatch))
-
 
 ;; leveldb stuff
 (def (get-leveldb key)
