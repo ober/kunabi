@@ -87,6 +87,12 @@
     (command 'st help: "Show status"))
   (def repairdb
     (command 'repairdb help: "repairdb"))
+
+  (def db-copy
+    (command 'db-copy help: "Copy all records from db1 to db2"
+	     (argument 'src help: "Location of source db")
+	     (argument 'dst help: "Location of destination db")))
+
   (def report
     (command 'report help: "report"
 	     (argument 'user help: "username")))
@@ -97,6 +103,7 @@
 		    ct
 		    compact
 		    countdb
+		    db-copy
 		    index
 		    le
 		    lec
@@ -115,8 +122,6 @@
 ;;		    sr
 		    st))
 
-
-
 (def (process-args cmd opt)
   (let-hash opt
     (case cmd
@@ -126,6 +131,8 @@
        (compact))
       ((countdb)
        (countdb))
+      ((db-copy)
+       (db-copy .src .dst))
       ((index)
        (index))
       ((le)
