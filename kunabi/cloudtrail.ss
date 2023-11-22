@@ -209,6 +209,7 @@
      (and (equal? (path-extension filename) ".gz")
 	  (not (equal? (path-strip-directory filename) ".gz"))))))
 
+
 (def (load-ct dir)
   "Entry point for processing cloudtrail files"
   (dp (format ">-- load-ct: ~a" dir))
@@ -277,6 +278,7 @@
          " threads: " (length (all-threads))
 	 " file: " file
 	)))))
+
 
 (def (number-only obj)
   (if (number? obj)
@@ -447,6 +449,8 @@
 	    (displayln "error: type :" type " not found in ui" (hash->str ui))))))
     username))
 
+
+
 (def (process-row row)
   (dp (format "process-row: row: ~a" (hash->list row)))
   (let-hash row
@@ -615,3 +619,91 @@
   (if (string? num)
     (string->number num)
     num))
+
+;; user search duplication, clean this mess up
+(def (su-ct-file file value)
+  (ensure-db)
+  ;;     (##gc)
+  (dp (format "read-ct-file: ~a" file))
+  (unless (file-already-processed? file)
+    (let ((btime (time->seconds (current-time)))
+	  (count 0))
+      (dp (memory-usage))
+      (call-with-input-file file
+	(lambda (file-input)
+	  (let ((mytables (load-ct-file file-input)))
+            (for-each
+	      (lambda (row)
+                (set! count (+ count 1))
+                (search-row row value))
+	      mytables))
+          (mark-file-processed file)))
+
+      (let ((delta (- (time->seconds (current-time)) btime)))
+        (displayln
+         "rps: " (float->int (/ count delta ))
+         " size: " count
+         " delta: " delta
+         " threads: " (length (all-threads))
+	 " file: " file
+	)))))
+
+(def (su file value)
+  (su-ct file value))
+
+(def (search-row row value)
+  (dp (format "search-row: row: ~a" (hash->list row)))
+  (let-hash row
+    (let*
+	((user (find-user .?userIdentity))
+	 (req-id (or .?requestID .?eventID))
+	 (epoch (date->epoch2 .?eventTime))
+	 (h (hash
+	     (ar .?awsRegion)
+	     (ec .?errorCode)
+	     (em .?errorMessage)
+	     (eid .?eventID)
+	     (en  .?eventName)
+	     (es .?eventSource)
+	     (time .?eventTime)
+	     (et .?eventType)
+	     (rid .?recipientAccountId)
+	     (rp .?requestParameters)
+	     (user user)
+	     ;;(re .?responseElements)
+	     (sia .?sourceIPAddress)
+	     (ua .?userAgent)
+	     (ui .?userIdentity))))
+
+      (when (string=? user value)
+	(set! write-back-count (+ write-back-count 1))
+	(db-batch req-id h)
+	(when (string? user)
+	(db-batch (format "user#~a#~a" user epoch) req-id))
+	(when (string? .?eventName)
+	  (db-batch (format "eventName#~a#~a" .?eventName epoch) req-id))
+	(when (string? .?errorCode)
+	  (db-batch (format "errorCode#~a#~a" .errorCode epoch) req-id))
+	))))
+
+(def (su-ct dir value)
+  "Entry point for processing cloudtrail files"
+  (dp (format ">-- load-ct: ~a" dir))
+  (spawn watch-heap!)
+  (let* ((count 0)
+	 (ct-files (find-ct-files "."))
+         (pool []))
+    (for (file ct-files)
+      (cond-expand
+        (gerbil-smp
+         (while (< tmax (length (all-threads)))
+	   (thread-yield!))
+         (let ((thread (spawn (lambda () (read-ct-file file)))))
+	   (set! pool (cons thread pool))))
+        (else
+         (su-ct-file file value)))
+      (flush-all?)
+      (set! count 0))
+    (cond-expand (gerbil-smp (for-each thread-join! pool)))
+    (db-write)
+    (db-close)))

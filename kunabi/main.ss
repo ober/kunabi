@@ -40,6 +40,11 @@
     (command 'ct help: "Load all files in dir. "
 	     (argument 'directory help: "Directory where the Cloudtrail files reside")))
 
+  (def su-ct
+    (command 'ct help: "Load all files in dir matching user. "
+	     (argument 'directory help: "Directory where the Cloudtrail files reside")
+  	     (argument 'value help: "Username to search for")))
+
   (def compact
     (command 'compact help: "Compact"))
 
@@ -101,6 +106,7 @@
 		    program: "kunabi"
 		    help: "Cloudtrail parser in Gerbil"
 		    ct
+		    su-ct
 		    compact
 		    countdb
 		    db-copy
@@ -125,6 +131,8 @@
 (def (process-args cmd opt)
   (let-hash opt
     (case cmd
+      ((su-ct)
+       (su-ct .directory .value))
       ((ct)
        (ct .directory))
       ((compact)
