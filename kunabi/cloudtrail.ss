@@ -677,7 +677,7 @@
 		 (ui .?userIdentity))))
 
 	  (displayln "Found a match!")
-	  (set! write-back-count (+ write-back-count 1))
+	  ;;(set! write-back-count (+ write-back-count 1))
 	  (db-batch req-id h)
 	  (when (string? user)
 	    (db-put (format "user#~a#~a" user epoch) req-id))
