@@ -274,7 +274,9 @@
          "rps: " (float->int (/ count delta ))
          " size: " count
          " delta: " delta
-         " threads: " (length (all-threads)))))))
+         " threads: " (length (all-threads))
+	 " file: " file
+	)))))
 
 (def (number-only obj)
   (if (number? obj)
