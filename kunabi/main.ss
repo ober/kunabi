@@ -41,7 +41,7 @@
 	     (argument 'directory help: "Directory where the Cloudtrail files reside")))
 
   (def su-ct
-    (command 'ct help: "Load all files in dir matching user. "
+    (command 'su-ct help: "Load all files in dir matching user. "
 	     (argument 'directory help: "Directory where the Cloudtrail files reside")
   	     (argument 'value help: "Username to search for")))
 
