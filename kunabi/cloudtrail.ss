@@ -302,9 +302,12 @@
   (dp (format "write-back-count && max-wb-size ~a ~a" write-back-count max-wb-size))
   (when (> write-back-count max-wb-size)
     (displayln "writing.... " write-back-count)
-    (leveldb-write db wb)
-    ;;(compact)
-    (set! write-back-count 0)))
+    (let ((old wb))
+      (thread (spawn
+	       (lambda ()
+		 (leveldb-write db old))))
+      (set! wb (leveldb-writebatch))
+      (set! write-back-count 0))))
 
 (def (get-last-key)
   "Get the last key for use in compaction"
