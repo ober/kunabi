@@ -303,9 +303,9 @@
   (when (> write-back-count max-wb-size)
     (displayln "writing.... " write-back-count)
     (let ((old wb))
-      (thread (spawn
-	       (lambda ()
-		 (leveldb-write db old))))
+      (spawn
+       (lambda ()
+	 (leveldb-write db old)))
       (set! wb (leveldb-writebatch))
       (set! write-back-count 0))))
 
