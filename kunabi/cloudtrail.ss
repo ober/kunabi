@@ -635,7 +635,7 @@
 
 (def (repairdb)
   "Repair the db"
-  (let ((db-dir (or (getenv "kunabidb" #f))))
+  (let ((db-dir (getenv "kunabidb" ".")))
     (leveldb-repair-db (format "~a/records" db-dir))))
 
 (def (def-num num)
