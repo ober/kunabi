@@ -277,7 +277,7 @@
          " delta: " delta
          " threads: " (length (all-threads))
 	 " file: " file
-	)))))
+	 )))))
 
 
 (def (number-only obj)
@@ -329,7 +329,7 @@
         (utf8->string (leveldb-iterator-key itor))
         (lp)))))
 
-(def (resolve-records ids)
+(def (resolve-records-old ids)
   (when (list? ids)
     (let ((outs [[ "Date" "Name" "User" "Source" "Hostname" "Type" "Request" "User Agent" "Error Code" "Error Message" "UserIdentify"]]))
       (for (id ids)
@@ -344,19 +344,40 @@
 				.?sia
 				.?et
 				(if (table? .?rp) (hash->list .?rp) .?rp)
-				.?ua
 				.?ec
 				.?em
 				.?ua
+				.?ui
 				] outs))))))
       (style-output outs "org-mode"))))
+
+
+(def (resolve-records ids)
+  (when (list? ids)
+    (let ((outs [[ "Date" "Name" "User" "Source" "Hostname" "Type" "Request" "User Agent" "Error Code" "Error Message" "UserIdentify"]]))
+      (for (id ids)
+	(set! outs (cons [
+			  (db-get (format "~a#h#time" id))
+			  (db-get (format "~a#h#en" id))
+			  (db-get (format "~a#h#user" id))
+			  (db-get (format "~a#h#es" id))
+			  (db-get (format "~a#h#sia" id))
+			  (db-get (format "~a#h#et" id))
+			  (let (rp (db-get (format "~a#h#rp" id))) (if (table? rp) (hash->list rp) rp))
+			  (db-get (format "~a#h#ua" id))
+			  (db-get (format "~a#h#ec" id))
+			  (db-get (format "~a#h#em" id))
+			  (db-get (format "~a#h#ui" id))
+			  ] outs)))
+      (style-output outs "org-mode"))))
+
 
 (def (tally-by-en ids)
   (when (list? ids)
     (let ((outs [[ "Event Name" "Total" ]])
-          (tally (make-hash-table)))
+	  (tally (make-hash-table)))
       (for (id ids)
-        (let ((id2 (db-get id)))
+	(let ((id2 (db-get id)))
 	  (when (table? id2)
 	    (let-hash id2
 	      (let ((en .?en))
@@ -364,7 +385,7 @@
 		  (hash-put! tally en (+ 1 (hash-ref tally en)))
 		  (hash-put! tally en 1)))))))
       (for (k (sort! (hash-keys tally) string<?))
-        (set! outs (cons [
+	(set! outs (cons [
 			  k
 			  (hash-ref tally k)
 			  ] outs)))
@@ -373,9 +394,9 @@
 (def (tally-by-ip ids)
   (when (list? ids)
     (let ((outs [[ "Host" "Totals" ]])
-          (tally (make-hash-table)))
+	  (tally (make-hash-table)))
       (for (id ids)
-        (let ((id2 (db-get id)))
+	(let ((id2 (db-get id)))
 	  (when (table? id2)
 	    (let-hash id2
 	      (let ((sia .?sia))
@@ -383,7 +404,7 @@
 		  (hash-put! tally sia (+ 1 (hash-ref tally sia)))
 		  (hash-put! tally sia 1)))))))
       (for (k (sort! (hash-keys tally) string<?))
-        (set! outs (cons [
+	(set! outs (cons [
 			  (get-host-name k)
 			  (hash-ref tally k)
 			  ] outs)))
@@ -457,29 +478,28 @@
 (def (process-row row)
   (dp (format "process-row: row: ~a" (hash->list row)))
   (let-hash row
-    (let*
+    (let
 	((user (find-user .?userIdentity))
 	 (req-id (or .?requestID .?eventID))
-	 (epoch (date->epoch2 .?eventTime))
-	 (h (hash
-	     (ar .?awsRegion)
-	     (ec .?errorCode)
-	     (em .?errorMessage)
-	     (eid .?eventID)
-	     (en  .?eventName)
-	     (es .?eventSource)
-	     (time .?eventTime)
-	     (et .?eventType)
-	     (rid .?recipientAccountId)
-	     (rp .?requestParameters)
-	     (user user)
-	     ;;(re .?responseElements)
-	     (sia .?sourceIPAddress)
-	     (ua .?userAgent)
-	     (ui .?userIdentity))))
+	 (epoch (date->epoch2 .?eventTime)))
 
       (set! write-back-count (+ write-back-count 1))
-      (db-batch req-id h)
+      (db-batch (format "~a#h#ar" req-id) .?awsRegion)
+      (db-batch (format "~a#h#ec" req-id) .?errorCode)
+      (db-batch (format "~a#h#em" req-id) .?errorMessage)
+      (db-batch (format "~a#h#eid" req-id) .?eventID)
+      (db-batch (format "~a#h#en" req-id) .?eventName)
+      (db-batch (format "~a#h#es" req-id) .?eventSource)
+      (db-batch (format "~a#h#time" req-id) .?eventTime)
+      (db-batch (format "~a#h#et" req-id) .?eventType)
+      (db-batch (format "~a#h#rid" req-id) .?recipientAccountId)
+      (db-batch (format "~a#h#rp" req-id) .?requestParameters)
+      (db-batch (format "~a#h#user" req-id) user)
+      (db-batch (format "~a#h#sia" req-id) .?sourceIPAddress)
+      (db-batch (format "~a#h#ua" req-id) .?userAgent)
+      (db-batch (format "~a#h#ui" req-id) .?userIdentity)
+
+      ;;(db-batch req-id h)
       (when (string? user)
 	(db-batch (format "user#~a#~a" user epoch) req-id))
       (when (string? .?eventName)
