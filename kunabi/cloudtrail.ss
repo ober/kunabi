@@ -347,7 +347,7 @@
 				.?ua
 				.?ec
 				.?em
-				.?ua
+				.?ui
 				] outs))))))
       (style-output outs "org-mode"))))
 
@@ -414,7 +414,6 @@
 	    (unless (string=? lookup-name ip)
 	      (db-batch (format "H-~a" ip) lookup-name))))))))
 
-
 (def (find-user ui)
   (let ((username ""))
     (when (table? ui)
@@ -451,8 +450,6 @@
 	      (set! username (format "Unknown Type: ~a" (hash->str ui)))))
 	    (displayln "error: type :" type " not found in ui" (hash->str ui))))))
     username))
-
-
 
 (def (process-row row)
   (dp (format "process-row: row: ~a" (hash->list row)))
