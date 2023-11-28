@@ -347,7 +347,7 @@
 				.?ua
 				.?ec
 				.?em
-				.?ui
+				(if (table? .?ui) (hash->list .?ui) .?ui)
 				] outs))))))
       (style-output outs "org-mode"))))
 
