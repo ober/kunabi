@@ -621,5 +621,5 @@
 
 (def (maintenance)
      (let lp ()
-       (sleep 2147483647)
+       (thread-sleep! 2147483647)
        (lp)))
