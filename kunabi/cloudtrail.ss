@@ -254,7 +254,6 @@
 
 (def (read-ct-file file)
   (ensure-db)
-  ;;     (##gc)
   (dp (format "read-ct-file: ~a" file))
   (unless (file-already-processed? file)
     (let ((btime (time->seconds (current-time)))
@@ -512,12 +511,12 @@
     (let ((location (format "~a/records" db-dir)))
       (leveldb-open location (leveldb-options
 			      paranoid-checks: #f
-			      max-open-files: (def-num (getenv "k_max_files" 500))
+			      max-open-files: (def-num (getenv "k_max_files" 500000))
 			      bloom-filter-bits: (def-num (getenv "k_bloom_bits" #f))
 			      compression: #t
 			      block-size: (def-num (getenv "k_block_size" #f))
-			      write-buffer-size: (def-num (getenv "k_write_buffer" (* 1024 1024 16)))
-			      lru-cache-capacity: (def-num (getenv "k_lru_cache" 1000)))))))
+			      write-buffer-size: (def-num (getenv "k_write_buffer" (* 102400 1024 16)))
+			      lru-cache-capacity: (def-num (getenv "k_lru_cache" 10000)))))))
 
 (def (db-copy src dst)
   "Copy all item from src to dst"
@@ -619,3 +618,8 @@
   (if (string? num)
     (string->number num)
     num))
+
+(def (maintenance)
+     (let lp ()
+       (sleep 2147483647)
+       (lp)))

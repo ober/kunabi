@@ -74,6 +74,9 @@
   (def sec
     (command 'sec help: "list all records of error code"
 	     (argument 'event)))
+  (def maintenance
+    (command 'maintenance help: "Do maintenance on db"))
+
   ;; (def sip
   ;;   (command 'sip help: "list all records from ip address"
   ;; 	     (argument 'event help: "Ip address")))
@@ -112,6 +115,7 @@
 ;;		    lr
 		    ls
 ;;		    lsv
+		    maintenance
 		    read
 		    repairdb
 		    report
@@ -149,6 +153,8 @@
        (ls))
       ;; ((lsv)
       ;;  (lsv))
+      ((maintenance)
+       (maintenance))
       ((read)
        (read .file))
       ((repairdb)
