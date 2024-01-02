@@ -5,7 +5,7 @@
 
 (defbuild-script
   `("kunabi/cloudtrail"
-    (optimized-static-exe:
+    (exe:
      "kunabi/main"
      bin: "kunabi"
      "-ld-options"
