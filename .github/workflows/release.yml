@@ -1,0 +1,32 @@
+name: release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build_release:
+    name: build_release
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+    - name: print out github context
+      env:
+        GITHUB_CONTEXT: ${{ toJson(github) }}
+      run: echo "$GITHUB_CONTEXT"
+    - name: list all github action env vars
+      run: env
+    - name: build artifacts
+      run: make
+    - name: upload linux artifact
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: .gerbil/bin/kunabi
+        asset_name: kunabi
+        asset_content_type: application/zip
