@@ -328,6 +328,13 @@
         (utf8->string (leveldb-iterator-key itor))
         (lp)))))
 
+(def (print-rp rp)
+  (when rp
+    (when (table? rp)
+      (hash-for-each
+       (lambda (x y)
+	 (pi x y))))))
+
 (def (resolve-records ids)
   (when (list? ids)
     (let ((outs [[ "Date" "Name" "User" "Source" "Hostname" "Type" "Request" "User Agent" "Error Code" "Error Message" "UserIdentify"]]))
@@ -342,7 +349,7 @@
 				.?es
 				.?sia
 				.?et
-				(if (table? .?rp) (hash->list .?rp) .?rp)
+				(if (table? .?rp) (print-rp .?rp) .?rp)
 				.?ua
 				.?ec
 				.?em
