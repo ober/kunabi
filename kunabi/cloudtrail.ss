@@ -350,7 +350,7 @@
 
 (def (resolve-records ids)
   (when (list? ids)
-    (let ((outs [[ "Date" "Name" "User" "Source" "Hostname" "Type" "Request" "User Agent" "Error Code" "Error Message" "UserIdentify"]]))
+    (let ((outs [[ "Date" "Name" "User" "Source" "Hostname" "Type" "Request" "User Agent" "Error Code" "Error Message"]]))
       (for (id ids)
         (let ((id2 (db-get id)))
 	  (when (table? id2)
@@ -366,7 +366,7 @@
 				.?ua
 				.?ec
 				.?em
-				(if (table? .?ui) (hash->list .?ui) .?ui)
+;;				(if (table? .?ui) (hash->list .?ui) .?ui)
 				] outs))))))
       (style-output outs "org-mode"))))
 
