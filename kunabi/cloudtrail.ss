@@ -340,7 +340,7 @@
 		  (when (list? .items)
 		    (for-each
 		      (lambda (x)
-			(if (table? x)
+			(when (table? x)
 			  (hash-for-each
 			   (lambda (k v)
 			     (set! results (cons v results)))
