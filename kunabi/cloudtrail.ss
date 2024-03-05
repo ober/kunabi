@@ -329,11 +329,20 @@
         (lp)))))
 
 (def (print-rp rp)
-  (when rp
-    (when (table? rp)
-      (hash-for-each
-       (lambda (x y)
-	 (pi x y))))))
+  (let ((results []))
+    (when rp
+      (when (table? rp)
+	(let-hash rp
+	  (when .?instancesSet
+	    (when (table? .instancesSet)
+	      (let-hash .instancesSet
+		(when .?items
+		  (when (list? .items)
+		    (for-each
+		      (lambda (x)
+			(set! results (cons x results)))
+		      .items)))))))))
+    (string-join results " ")))
 
 (def (resolve-records ids)
   (when (list? ids)
@@ -479,7 +488,8 @@
 	     ;;(re .?responseElements)
 	     (sia .?sourceIPAddress)
 	     (ua .?userAgent)
-	     (ui .?userIdentity))))
+	     ;;(ui .?userIdentity)
+	     )))
 
       (set! write-back-count (+ write-back-count 1))
       (db-batch req-id h)
