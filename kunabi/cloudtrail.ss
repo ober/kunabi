@@ -278,7 +278,6 @@
 	 " file: " file
 	)))))
 
-
 (def (number-only obj)
   (if (number? obj)
     obj
@@ -478,7 +477,7 @@
 	 (req-id (or .?requestID .?eventID))
 	 (epoch (date->epoch2 .?eventTime))
 	 (h (hash
-	     (ar .?awsRegion)
+	     ;;(ar .?awsRegion)
 	     (ec .?errorCode)
 	     (em .?errorMessage)
 	     (eid .?eventID)
