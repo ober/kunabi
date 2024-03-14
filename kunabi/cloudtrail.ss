@@ -122,7 +122,7 @@
       (db-get index)
       (let (entries
 	    (sort-uniq-reverse
-	     (uniq-by-mid-prefix "user")))
+	     (uniq-by-mid-prefix "u")))
         (db-put index entries)
         entries))))
 
@@ -141,7 +141,7 @@
       (db-get index)
       (let (entries
 	    (sort-uniq-reverse
-	     (uniq-by-mid-prefix "eventName")))
+	     (uniq-by-mid-prefix "en")))
         (db-put index entries)
         entries))))
 
@@ -160,7 +160,7 @@
       (db-get index)
       (let (entries
 	    (sort-uniq-reverse
-	     (uniq-by-mid-prefix "errorCode")))
+	     (uniq-by-mid-prefix "ec")))
         (db-put index entries)
         entries))))
 
@@ -171,11 +171,11 @@
   (displayln "** Total by Source IP")
   (tally-by-ip
    (resolve-by-key
-    (format "user#~a#" user)))
+    (format "u#~a#" user)))
   (displayln "** Total by Event Name")
   (tally-by-en
    (resolve-by-key
-    (format "user#~a#" user))))
+    (format "u#~a#" user))))
 
 (def (reports)
   (for (user (list-users))
@@ -183,18 +183,16 @@
     (report user)))
 
 (def (sn key)
-  (match-key (format "user#~a#" key)))
+  (match-key (format "u#~a#" key)))
 
 (def (se key)
-  (match-key (format "eventName#~a#" key)))
+  (match-key (format "en#~a#" key)))
 
 (def (sec key)
-  (match-key (format "errorCode#~a#" key)))
+  (match-key (format "ec#~a#" key)))
 
 (def (st)
-  (displayln "Totals: "
-	     " records: " (countdb)
-	     ))
+     (displayln "Totals: " " records: " (countdb)))
 
 (def (read file)
   (read-ct-file file))
@@ -277,7 +275,6 @@
          " threads: " (length (all-threads))
 	 " file: " file
 	)))))
-
 
 (def (number-only obj)
   (if (number? obj)
@@ -498,11 +495,11 @@
       (set! write-back-count (+ write-back-count 1))
       (db-batch req-id h)
       (when (string? user)
-	(db-batch (format "user#~a#~a" user epoch) req-id))
+	(db-batch (format "u#~a#~a" user epoch) req-id))
       (when (string? .?eventName)
-	(db-batch (format "eventName#~a#~a" .?eventName epoch) req-id))
+	(db-batch (format "en#~a#~a" .?eventName epoch) req-id))
       (when (string? .?errorCode)
-	(db-batch (format "errorCode#~a#~a" .errorCode epoch) req-id))
+	(db-batch (format "ec#~a#~a" .errorCode epoch) req-id))
       )))
 
 ;; db stuff
