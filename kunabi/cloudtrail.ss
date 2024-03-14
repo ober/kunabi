@@ -475,7 +475,7 @@
 	 (req-id (or .?requestID .?eventID))
 	 (epoch (date->epoch2 .?eventTime))
 	 (h (hash
-	     (ar .?awsRegion)
+	     ;;(ar .?awsRegion)
 	     (ec .?errorCode)
 	     (em .?errorMessage)
 	     (eid .?eventID)
@@ -484,12 +484,12 @@
 	     (time .?eventTime)
 	     (et .?eventType)
 	     (rid .?recipientAccountId)
-	     (rp .?requestParameters)
+	     (rp (hash-it .?requestParameters))
 	     (user user)
-	     ;;(re .?responseElements)
+	     (re (hash-it .?responseElements))
 	     (sia .?sourceIPAddress)
 	     (ua .?userAgent)
-	     ;;(ui .?userIdentity)
+	     (ui (hash-it .?userIdentity))
 	     )))
 
       (set! write-back-count (+ write-back-count 1))
@@ -503,6 +503,16 @@
       )))
 
 ;; db stuff
+
+(def (hash-it obj)
+  "First we get the hash, then check if it exists, if not add it. return hash"
+  (if obj
+    (let* ((digest (hex-encode (md5 obj)))
+	   (exists (db-get digest)))
+      (unless exists
+	(db-put digest obj))
+      digest)
+    obj))
 
 (def (db-batch key value)
   (unless (string? key) (dp (format "key: ~a val: ~a" (type-of key) (type-of value))))
