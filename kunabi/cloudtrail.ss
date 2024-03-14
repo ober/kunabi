@@ -619,9 +619,12 @@
 
 (def (countdb)
   "Get a count of how many records are in db"
-  (let ((itor (leveldb-iterator db)))
+  (let ((mod 1000000)
+	(itor (leveldb-iterator db)))
     (leveldb-iterator-seek-first itor)
     (let lp ((count 1))
+      (when (= (modulo count mod) 0)
+	(displayln count))
       (leveldb-iterator-next itor)
       (if (leveldb-iterator-valid? itor)
         (lp (1+ count))
