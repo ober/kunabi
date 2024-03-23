@@ -508,7 +508,7 @@
 ;; db stuff
 
 (def (db-batch key value)
-  (unless (string? key) (dp (format "key: ~a val: ~a" (type-of key) (type-of value))))
+  (unless (string? key) (dp (format "key: ~a val: ~a" (##type-id key) (##type-id value))))
   (leveldb-writebatch-put wb key (object->u8vector value)))
 
 (def (db-put key value)
