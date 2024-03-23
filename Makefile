@@ -4,6 +4,7 @@ ARCH := $(shell uname -m)
 DOCKER_IMAGE := "gerbil/gerbilxx:$(ARCH)-master"
 UID := $(shell id -u)
 GID := $(shell id -g)
+PWD := $(shell pwd)
 
 default: linux-static-docker
 
@@ -13,7 +14,7 @@ deps:
 build: deps
 	git config --global --add safe.directory /src
 	/opt/gerbil/bin/gxpkg link $(PROJECT) /src || true
-	/opt/gerbil/bin/gxpkg build -R -O $(PROJECT)
+	/opt/gerbil/bin/gxpkg build -R $(PROJECT)
 
 linux-static-docker: clean
 	docker run -it \
