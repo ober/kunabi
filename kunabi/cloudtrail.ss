@@ -164,7 +164,7 @@
            (db-get index)
            (let (entries
 	               (sort-uniq-reverse
-	                (uniq-by-mid-prefix "ec")))
+	                (uniq-by-mid-prefix "ec#")))
              (db-put index entries)
              entries))))
 
