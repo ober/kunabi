@@ -211,7 +211,6 @@
         (and (equal? (path-extension filename) ".gz")
 	           (not (equal? (path-strip-directory filename) ".gz"))))))
 
-
 (def (load-ct dir)
      "Entry point for processing cloudtrail files"
      (dp (format ">-- load-ct: ~a" dir))
@@ -498,6 +497,8 @@
 
                  (set! write-back-count (+ write-back-count 1))
                  (db-batch req-id h)
+                 (when (string=? user "")
+                   (displayln "Error: missing user: " user))
                  (when (string? user)
 	                 (db-batch (format "u#~a#~a" user epoch) req-id))
                  (when (string? .?eventName)
