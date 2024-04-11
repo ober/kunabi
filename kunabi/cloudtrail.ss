@@ -65,7 +65,7 @@
          (leveldb-iterator-next itor)
          (let ((key (utf8->string (leveldb-iterator-key itor)))
                (val (u8vector->object (leveldb-iterator-value itor))))
-           (if (table? val)
+           (if (hash-table? val)
                (displayln (format "k: ~a v: ~a" key (hash->list val)))
                (displayln (format "k: ~a v: ~a" key val))))
          (when (leveldb-iterator-valid? itor)
@@ -331,16 +331,16 @@
 (def (print-rp rp)
      (let ((results []))
        (when rp
-         (when (table? rp)
+         (when (hash-table? rp)
 	         (let-hash rp
 	                   (when .?instancesSet
-	                     (when (table? .instancesSet)
+	                     (when (hash-table? .instancesSet)
 	                       (let-hash .instancesSet
 		                               (when .?items
 		                                 (when (list? .items)
 		                                   (for-each
 		                                    (lambda (x)
-			                                    (when (table? x)
+			                                    (when (hash-table? x)
 			                                      (hash-for-each
 			                                       (lambda (k v)
 			                                         (set! results (cons v results)))
@@ -353,7 +353,7 @@
        (let ((outs [[ "Date" "Name" "User" "Source" "Hostname" "Type" "Request" "User Agent" "Error Code" "Error Message"]]))
          (for (id ids)
               (let ((id2 (db-get id)))
-	              (when (table? id2)
+	              (when (hash-table? id2)
 	                (let-hash id2
 	                          (set! outs (cons [
 				                                      .?time
@@ -362,11 +362,11 @@
 				                                      .?es
 				                                      .?sia
 				                                      .?et
-				                                      (if (table? .?rp) (print-rp .?rp) .?rp)
+				                                      (if (hash-table? .?rp) (print-rp .?rp) .?rp)
 				                                      .?ua
 				                                      .?ec
 				                                      .?em
-                                              ;;				(if (table? .?ui) (hash->list .?ui) .?ui)
+                                              ;;				(if (hash-table? .?ui) (hash->list .?ui) .?ui)
 				                                      ] outs))))))
          (style-output outs "org-mode"))))
 
@@ -376,7 +376,7 @@
              (tally (make-hash-table)))
          (for (id ids)
               (let ((id2 (db-get id)))
-	              (when (table? id2)
+	              (when (hash-table? id2)
 	                (let-hash id2
 	                          (let ((en .?en))
 		                          (if (hash-ref tally en #f)
@@ -395,7 +395,7 @@
              (tally (make-hash-table)))
          (for (id ids)
               (let ((id2 (db-get id)))
-	              (when (table? id2)
+	              (when (hash-table? id2)
 	                (let-hash id2
 	                          (let ((sia .?sia))
 		                          (if (hash-ref tally sia #f)
@@ -436,7 +436,7 @@
 (def (find-user ui)
      (dp (format "+find-user ~a" (hash->list ui)))
      (let ((username ""))
-       (when (table? ui)
+       (when (hash-table? ui)
          (let-hash ui
 	                 (let ((type (hash-get ui 'type)))
                      (dp (format "find-user: type is ~a" type))
@@ -450,9 +450,9 @@
 	                         (set! username (format "~a" .?principalId)))
 	                        ((string=? "AssumedRole" type)
 	                         (if (hash-key? ui 'sessionContext)
-		                           (when (table? .?sessionContext)
+		                           (when (hash-table? .?sessionContext)
 		                             (let-hash .?sessionContext
-		                                       (when (table? .?sessionIssuer)
+                                           (when (hash-table? .?sessionIssuer)
 		                                         (let-hash .?sessionIssuer
 			                                                 (set! username (format "~a/~a" .userName (cadr (pregexp-split ":" ...principalId))))))))
 		                           (begin
@@ -463,9 +463,9 @@
 	                        ((string=? "Root" type)
 	                         (set! username (format "~a invokedBy: ~a" (hash-get ui 'userName) (hash-get ui 'invokedBy))))
 	                        ((string=? "FederatedUser" type)
-	                         (when (table? .?sessionContext)
+	                         (when (hash-table? .?sessionContext)
 		                         (let-hash .?sessionContext
-		                                   (when (table? .?sessionIssuer)
+		                                   (when (hash-table? .?sessionIssuer)
 		                                     (set! username (hash-ref .?sessionIssuer 'userName))))))
 	                        (else
 	                         (set! username (format "Unknown Type: ~a" (hash->str ui)))))
