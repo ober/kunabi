@@ -434,6 +434,7 @@
 	                 (db-batch (format "H-~a" ip) lookup-name))))))))
 
 (def (find-user ui)
+     (dp (format "+find-user ~a" (hash->list ui)))
      (let ((username ""))
        (when (table? ui)
          (let-hash ui
