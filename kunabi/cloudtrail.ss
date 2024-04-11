@@ -439,7 +439,8 @@
        (when (table? ui)
          (let-hash ui
 	                 (let ((type (hash-get ui 'type)))
-	                   (if type
+                     (dp (format "find-user: type is ~a" type))
+                     (if type
 	                       (cond
 	                        ((string=? "SAMLUser" type)
 	                         (set! username .userName))
