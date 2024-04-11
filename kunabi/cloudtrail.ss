@@ -126,7 +126,7 @@
            (db-get index)
            (let (entries
 	               (sort-uniq-reverse
-	                (uniq-by-mid-prefix "u")))
+	                (uniq-by-mid-prefix "u#")))
              (db-put index entries)
              entries))))
 
@@ -145,7 +145,7 @@
            (db-get index)
            (let (entries
 	               (sort-uniq-reverse
-	                (uniq-by-mid-prefix "en")))
+	                (uniq-by-mid-prefix "en#")))
              (db-put index entries)
              entries))))
 
