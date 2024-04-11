@@ -447,7 +447,7 @@
 	                        ((string=? "IAMUser" type)
 	                         (set! username .userName))
 	                        ((string=? "AWSAccount" type)
-	                         (set! username (format "~a" .?principalId)))
+	                         (set! username (format "~a:~a" .?principalId .?accountId)))
 	                        ((string=? "AssumedRole" type)
 	                         (if (hash-key? ui 'sessionContext)
 		                           (when (hash-table? .?sessionContext)
