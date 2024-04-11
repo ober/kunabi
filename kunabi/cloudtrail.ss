@@ -19,6 +19,7 @@
   :std/sugar
   :std/text/json
   :clan/text/yaml
+  :std/text/hex
   :std/text/zlib
   :ober/oberlib)
 
