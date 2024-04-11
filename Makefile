@@ -20,8 +20,9 @@ linux-static-docker: clean
 	docker run -it \
 	-e GERBIL_PATH=/src/.gerbil \
 	-e USER=$(USER) \
-	-e UID=$(id -u) \
-	-e GID=$(id -g) \
+	-u "$(UID):$(GID)" \
+	-e UID=$(UID) \
+	-e GID=$(GID) \
 	-v $(PWD):/src:Z \
 	$(DOCKER_IMAGE) \
 	make -C /src build
