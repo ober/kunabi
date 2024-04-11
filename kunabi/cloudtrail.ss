@@ -17,6 +17,7 @@
   :std/srfi/1
   :std/srfi/95
   :std/sugar
+  :std/crypto
   :std/text/json
   :clan/text/yaml
   :std/text/hex
