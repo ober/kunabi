@@ -28,8 +28,6 @@
 
 (export #t)
 
-(parameterize ((json-symbolic-keys #t)))
-
 (def db-type leveldb:)
 (def nil '#(nil))
 (def program-name "kunabi")
@@ -248,12 +246,13 @@
        (db-batch (format "F-~a" short) "t")))
 
 (def (load-ct-file file)
-     (hash-ref
-      (read-json
-       (open-input-string
-        (utf8->string
-         (uncompress file))))
-      'Records))
+       (hash-ref
+        (parameterize ((read-json-key-as-symbol? #t))
+          (read-json
+           (open-input-string
+            (utf8->string
+             (uncompress file)))))
+          'Records))
 
 (def (read-ct-file file)
      (ensure-db)
