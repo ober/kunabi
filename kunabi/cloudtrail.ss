@@ -28,6 +28,8 @@
 
 (export #t)
 
+(parameterize ((json-symbolic-keys #t)))
+
 (def db-type leveldb:)
 (def nil '#(nil))
 (def program-name "kunabi")
@@ -434,7 +436,7 @@
 	                 (db-batch (format "H-~a" ip) lookup-name))))))))
 
 (def (find-user ui)
-     (dp (format "+find-user ~a" (hash->list ui)))
+     ;;(dp (format "+find-user ~a" (hash->list ui)))
      (let ((username ""))
        (when (hash-table? ui)
          (let-hash ui
@@ -475,6 +477,7 @@
 (def (process-row row)
      (dp (format "process-row: row: ~a" (hash->list row)))
      (let-hash row
+               (dp (hash->string row))
                (let*
 	                 ((user (find-user .?userIdentity))
 	                  (req-id (or .?requestID .?eventID))
