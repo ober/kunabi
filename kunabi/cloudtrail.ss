@@ -79,11 +79,11 @@
     (let lp ((res '()))
       (if (leveldb-iterator-valid? itor)
         (if (pregexp-match key (utf8->string (leveldb-iterator-key itor)))
-	      (begin
-	        (set! res (cons (u8vector->object (leveldb-iterator-value itor)) res))
-	        (leveldb-iterator-next itor)
-	        (lp res))
-	      res)
+	        (begin
+	          (set! res (cons (u8vector->object (leveldb-iterator-value itor)) res))
+	          (leveldb-iterator-next itor)
+	          (lp res))
+	        res)
         res))))
 
 (def (uniq-by-mid-prefix key)
@@ -96,11 +96,11 @@
           (dp (format "k is ~a" k))
           (if (pregexp-match key k)
             (let ((mid (nth 1 (pregexp-split "#" k))))
-	          (unless (member mid res)
+	            (unless (member mid res)
                 (set! res (cons mid res)))
-	          (leveldb-iterator-next itor)
-	          (lp res))
-	        res))
+	            (leveldb-iterator-next itor)
+	            (lp res))
+	          res))
         res))))
 
 (def (sort-uniq-reverse lst)
@@ -125,8 +125,8 @@
     (if (db-key? index)
       (db-get index)
       (let (entries
-	        (sort-uniq-reverse
-	         (uniq-by-mid-prefix "u#")))
+	          (sort-uniq-reverse
+	           (uniq-by-mid-prefix "u#")))
         (db-put index entries)
         entries))))
 
@@ -144,8 +144,8 @@
     (if (db-key? index)
       (db-get index)
       (let (entries
-	        (sort-uniq-reverse
-	         (uniq-by-mid-prefix "en#")))
+	          (sort-uniq-reverse
+	           (uniq-by-mid-prefix "en#")))
         (db-put index entries)
         entries))))
 
@@ -163,8 +163,8 @@
     (if (db-key? index)
       (db-get index)
       (let (entries
-	        (sort-uniq-reverse
-	         (uniq-by-mid-prefix "ec#")))
+	          (sort-uniq-reverse
+	           (uniq-by-mid-prefix "ec#")))
         (db-put index entries)
         entries))))
 
@@ -209,22 +209,22 @@
    dir
    (lambda (filename)
      (and (equal? (path-extension filename) ".gz")
-	      (not (equal? (path-strip-directory filename) ".gz"))))))
+	        (not (equal? (path-strip-directory filename) ".gz"))))))
 
 (def (load-ct dir)
   "Entry point for processing cloudtrail files"
   (dp (format ">-- load-ct: ~a" dir))
   (spawn watch-heap!)
   (let* ((count 0)
-	     (ct-files (find-ct-files "."))
+	       (ct-files (find-ct-files "."))
          (pool []))
     (for (file ct-files)
       (cond-expand
         (gerbil-smp
          (while (< tmax (length (all-threads)))
-	       (thread-yield!))
+	         (thread-yield!))
          (let ((thread (spawn (lambda () (read-ct-file file)))))
-	       (set! pool (cons thread pool))))
+	         (set! pool (cons thread pool))))
         (else
          (read-ct-file file)))
       (flush-all?)
@@ -259,16 +259,16 @@
   (dp (format "read-ct-file: ~a" file))
   (unless (file-already-processed? file)
     (let ((btime (time->seconds (current-time)))
-	      (count 0))
+	        (count 0))
       (dp (memory-usage))
       (call-with-input-file file
-	    (lambda (file-input)
-	      (let ((mytables (load-ct-file file-input)))
+	      (lambda (file-input)
+	        (let ((mytables (load-ct-file file-input)))
             (for-each
-	          (lambda (row)
+	            (lambda (row)
                 (set! count (+ count 1))
                 (process-row row))
-	          mytables))
+	            mytables))
           (mark-file-processed file)))
 
       (let ((delta (- (time->seconds (current-time)) btime)))
@@ -277,8 +277,8 @@
          " size: " count
          " delta: " delta
          " threads: " (length (all-threads))
-	     " file: " file
-	     )))))
+	       " file: " file
+	       )))))
 
 (def (number-only obj)
   (if (number? obj)
@@ -292,9 +292,9 @@
     (lambda (ix)
       (cond
        ((string-index str #\. ix)
-	    =>
+	      =>
         (lambda (jx)
-	      (substring str (1+ ix) jx)))
+	        (substring str (1+ ix) jx)))
        (else #f))))
    (else str)))
 
@@ -305,7 +305,7 @@
     (let ((old wb))
       (spawn
        (lambda ()
-	     (leveldb-write db old)))
+	       (leveldb-write db old)))
       (set! wb (leveldb-writebatch))
       (set! write-back-count 0))))
 
@@ -333,20 +333,20 @@
   (let ((results []))
     (when rp
       (when (hash-table? rp)
-	    (let-hash rp
-	      (when .?instancesSet
-	        (when (hash-table? .instancesSet)
-	          (let-hash .instancesSet
-		        (when .?items
-		          (when (list? .items)
-		            (for-each
-		              (lambda (x)
-			            (when (hash-table? x)
-			              (hash-for-each
-			               (lambda (k v)
-			                 (set! results (cons v results)))
-			               x)))
-		              .items)))))))))
+	      (let-hash rp
+	        (when .?instancesSet
+	          (when (hash-table? .instancesSet)
+	            (let-hash .instancesSet
+		            (when .?items
+		              (when (list? .items)
+		                (for-each
+		                  (lambda (x)
+			                  (when (hash-table? x)
+			                    (hash-for-each
+			                     (lambda (k v)
+			                       (set! results (cons v results)))
+			                     x)))
+		                  .items)))))))))
     (string-join results " ")))
 
 (def (resolve-records ids)
@@ -354,21 +354,21 @@
     (let ((outs [[ "Date" "Name" "User" "Source" "Hostname" "Type" "Request" "User Agent" "Error Code" "Error Message"]]))
       (for (id ids)
         (let ((id2 (db-get id)))
-	      (when (hash-table? id2)
-	        (let-hash id2
-	          (set! outs (cons [
-				                .?time
-				                .?en
-				                .?user
-				                .?es
-				                .?sia
-				                .?et
-				                (if (hash-table? .?rp) (print-rp .?rp) .?rp)
-				                .?ua
-				                .?ec
-				                .?em
+	        (when (hash-table? id2)
+	          (let-hash id2
+	            (set! outs (cons [
+				                        .?time
+				                        .?en
+				                        .?user
+				                        .?es
+				                        .?sia
+				                        .?et
+				                        (if (hash-table? .?rp) (print-rp .?rp) .?rp)
+				                        .?ua
+				                        .?ec
+				                        .?em
                                 ;;				(if (hash-table? .?ui) (hash->list .?ui) .?ui)
-				                ] outs))))))
+				                        ] outs))))))
       (style-output outs "org-mode"))))
 
 (def (tally-by-en ids)
@@ -377,17 +377,17 @@
           (tally (make-hash-table)))
       (for (id ids)
         (let ((id2 (db-get id)))
-	      (when (hash-table? id2)
-	        (let-hash id2
-	          (let ((en .?en))
-		        (if (hash-ref tally en #f)
-		          (hash-put! tally en (+ 1 (hash-ref tally en)))
-		          (hash-put! tally en 1)))))))
+	        (when (hash-table? id2)
+	          (let-hash id2
+	            (let ((en .?en))
+		            (if (hash-ref tally en #f)
+		              (hash-put! tally en (+ 1 (hash-ref tally en)))
+		              (hash-put! tally en 1)))))))
       (for (k (sort! (hash-keys tally) string<?))
         (set! outs (cons [
-			              k
-			              (hash-ref tally k)
-			              ] outs)))
+			                    k
+			                    (hash-ref tally k)
+			                    ] outs)))
       (style-output outs "org-mode"))))
 
 (def (tally-by-ip ids)
@@ -396,25 +396,25 @@
           (tally (make-hash-table)))
       (for (id ids)
         (let ((id2 (db-get id)))
-	      (when (hash-table? id2)
-	        (let-hash id2
-	          (let ((sia .?sia))
-		        (if (hash-ref tally sia #f)
-		          (hash-put! tally sia (+ 1 (hash-ref tally sia)))
-		          (hash-put! tally sia 1)))))))
+	        (when (hash-table? id2)
+	          (let-hash id2
+	            (let ((sia .?sia))
+		            (if (hash-ref tally sia #f)
+		              (hash-put! tally sia (+ 1 (hash-ref tally sia)))
+		              (hash-put! tally sia 1)))))))
       (for (k (sort! (hash-keys tally) string<?))
         (set! outs (cons [
-			              (get-host-name k)
-			              (hash-ref tally k)
-			              ] outs)))
+			                    (get-host-name k)
+			                    (hash-ref tally k)
+			                    ] outs)))
       (style-output outs "org-mode"))))
 
 (def (get-host-name ip)
   (if (pregexp-match "^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}" ip)
     (let ((lookup (host-info ip)))
       (if (host-info? lookup)
-	    (let ((lookup-name (host-info-name lookup)))
-	      lookup-name)))
+	      (let ((lookup-name (host-info-name lookup)))
+	        lookup-name)))
     ip))
 
 ;;;;;;;;;; vpc stuff
@@ -426,51 +426,51 @@
   (displayln ip)
   (if (ip? ip)
     (let* ((idx (format "H-~a" ip))
-	       (lookup (host-info ip))
-	       (resolved? (db-key? idx)))
+	         (lookup (host-info ip))
+	         (resolved? (db-key? idx)))
       (unless resolved?
         (when (host-info? lookup)
           (let ((lookup-name (host-info-name lookup)))
-	        (unless (string=? lookup-name ip)
-	          (db-batch (format "H-~a" ip) lookup-name))))))))
+	          (unless (string=? lookup-name ip)
+	            (db-batch (format "H-~a" ip) lookup-name))))))))
 
 (def (find-user ui)
   ;;(dp (format "+find-user ~a" (hash->list ui)))
   (let ((username ""))
     (when (hash-table? ui)
       (let-hash ui
-	    (let ((type (hash-get ui 'type)))
+	      (let ((type (hash-get ui 'type)))
           (dp (format "find-user: type is ~a" type))
           (if type
-	        (cond
-	         ((string=? "SAMLUser" type)
-	          (set! username .userName))
-	         ((string=? "IAMUser" type)
-	          (set! username .userName))
-	         ((string=? "AWSAccount" type)
-	          (set! username (format "~a:~a" .?principalId .?accountId)))
-	         ((string=? "AssumedRole" type)
-	          (if (hash-key? ui 'sessionContext)
-		        (when (hash-table? .?sessionContext)
-		          (let-hash .?sessionContext
+	          (cond
+	           ((string=? "SAMLUser" type)
+	            (set! username .userName))
+	           ((string=? "IAMUser" type)
+	            (set! username .userName))
+	           ((string=? "AWSAccount" type)
+	            (set! username (format "~a:~a" .?principalId .?accountId)))
+	           ((string=? "AssumedRole" type)
+	            (if (hash-key? ui 'sessionContext)
+		            (when (hash-table? .?sessionContext)
+		              (let-hash .?sessionContext
                     (when (hash-table? .?sessionIssuer)
-		              (let-hash .?sessionIssuer
-			            (set! username (format "~a/~a" .userName (cadr (pregexp-split ":" ...principalId))))))))
-		        (begin
-		          (displayln (format "Fall thru find-user ~a~%" (hash->list ui)))
-		          (set! username (cdr (pregexp-split ":" .principalId)))))) ;; not found go with this for now.
-	         ((string=? "AWSService" type)
-	          (set! username (hash-get ui 'invokedBy)))
-	         ((string=? "Root" type)
-	          (set! username (format "~a invokedBy: ~a" (hash-get ui 'userName) (hash-get ui 'invokedBy))))
-	         ((string=? "FederatedUser" type)
-	          (when (hash-table? .?sessionContext)
-		        (let-hash .?sessionContext
-		          (when (hash-table? .?sessionIssuer)
-		            (set! username (hash-ref .?sessionIssuer 'userName))))))
-	         (else
-	          (set! username (format "Unknown Type: ~a" (hash->str ui)))))
-	        (displayln "error: type :" type " not found in ui" (hash->str ui))))))
+		                  (let-hash .?sessionIssuer
+			                  (set! username (format "~a/~a" .userName (cadr (pregexp-split ":" ...principalId))))))))
+		            (begin
+		              (displayln (format "Fall thru find-user ~a~%" (hash->list ui)))
+		              (set! username (nth 2 (pregexp-split ":" .principalId)))))) ;; not found go with this for now.
+	           ((string=? "AWSService" type)
+	            (set! username (hash-get ui 'invokedBy)))
+	           ((string=? "Root" type)
+	            (set! username (format "~a invokedBy: ~a" (hash-get ui 'userName) (hash-get ui 'invokedBy))))
+	           ((string=? "FederatedUser" type)
+	            (when (hash-table? .?sessionContext)
+		            (let-hash .?sessionContext
+		              (when (hash-table? .?sessionIssuer)
+		                (set! username (hash-ref .?sessionIssuer 'userName))))))
+	           (else
+	            (set! username (format "Unknown Type: ~a" (hash->str ui)))))
+	          (displayln "error: type :" type " not found in ui" (hash->str ui))))))
     username))
 
 (def (process-row row)
@@ -478,37 +478,37 @@
   (let-hash row
     (dp (hash->string row))
     (let*
-	    ((user (find-user .?userIdentity))
-	     (req-id (or .?requestID .?eventID))
-	     (epoch (date->epoch2 .?eventTime))
-	     (h (hash
-	         ;;(ar .?awsRegion)
-	         (ec .?errorCode)
-	         (em .?errorMessage)
-	         (eid .?eventID)
-	         (en  .?eventName)
-	         (es .?eventSource)
-	         (time .?eventTime)
-	         (et .?eventType)
-	         (rid .?recipientAccountId)
-	         ;;(rp (hash-it .?requestParameters))
-	         (user user)
-	         ;;(re (hash-it .?responseElements))
-	         (sia .?sourceIPAddress)
-	         (ua .?userAgent)
-	         ;;(ui (hash-it .?userIdentity))
-	         )))
+	      ((user (find-user .?userIdentity))
+	       (req-id (or .?requestID .?eventID))
+	       (epoch (date->epoch2 .?eventTime))
+	       (h (hash
+	           ;;(ar .?awsRegion)
+	           (ec .?errorCode)
+	           (em .?errorMessage)
+	           (eid .?eventID)
+	           (en  .?eventName)
+	           (es .?eventSource)
+	           (time .?eventTime)
+	           (et .?eventType)
+	           (rid .?recipientAccountId)
+	           ;;(rp (hash-it .?requestParameters))
+	           (user user)
+	           ;;(re (hash-it .?responseElements))
+	           (sia .?sourceIPAddress)
+	           (ua .?userAgent)
+	           ;;(ui (hash-it .?userIdentity))
+	           )))
 
       (set! write-back-count (+ write-back-count 1))
       (db-batch req-id h)
       (when (string=? user "")
         (displayln "Error: missing user: " user))
       (when (string? user)
-	    (db-batch (format "u#~a#~a" user epoch) req-id))
+	      (db-batch (format "u#~a#~a" user epoch) req-id))
       (when (string? .?eventName)
-	    (db-batch (format "en#~a#~a" .?eventName epoch) req-id))
+	      (db-batch (format "en#~a#~a" .?eventName epoch) req-id))
       (when (string? .?errorCode)
-	    (db-batch (format "ec#~a#~a" .errorCode epoch) req-id))
+	      (db-batch (format "ec#~a#~a" .errorCode epoch) req-id))
       )))
 
 ;; db stuff
@@ -517,9 +517,9 @@
   "First we get the hash, then check if it exists, if not add it. return hash"
   (if obj
     (let* ((digest (hex-encode (md5 (object->u8vector obj))))
-	       (exists (db-get digest)))
+	         (exists (db-get digest)))
       (unless exists
-	    (db-put digest obj))
+	      (db-put digest obj))
       digest)
     obj))
 
@@ -547,33 +547,33 @@
       (create-directory* db-dir))
     (let ((location (format "~a/records" db-dir)))
       (leveldb-open location (leveldb-options
-			                  paranoid-checks: #f
-			                  max-open-files: (def-num (getenv "k_max_files" 500000))
-			                  bloom-filter-bits: (def-num (getenv "k_bloom_bits" #f))
-			                  compression: #t
-			                  block-size: (def-num (getenv "k_block_size" #f))
-			                  write-buffer-size: (def-num (getenv "k_write_buffer" (* 102400 1024 16)))
-			                  lru-cache-capacity: (def-num (getenv "k_lru_cache" 10000)))))))
+			                        paranoid-checks: #f
+			                        max-open-files: (def-num (getenv "k_max_files" 500000))
+			                        bloom-filter-bits: (def-num (getenv "k_bloom_bits" #f))
+			                        compression: #t
+			                        block-size: (def-num (getenv "k_block_size" #f))
+			                        write-buffer-size: (def-num (getenv "k_write_buffer" (* 102400 1024 16)))
+			                        lru-cache-capacity: (def-num (getenv "k_lru_cache" 10000)))))))
 
 (def (db-copy src dst)
   "Copy all item from src to dst"
   (let* ((src-db (leveldb-open (format "~a/records" src)))
-	     (itor (leveldb-iterator src-db))
-	     (dst-db (leveldb-open (format "~a/records" dst))))
+	       (itor (leveldb-iterator src-db))
+	       (dst-db (leveldb-open (format "~a/records" dst))))
     (leveldb-iterator-seek-first itor)
     (let lp ()
       (let ((key (utf8->string (leveldb-iterator-key itor)))
             (val (leveldb-iterator-value itor)))
-	    (if (leveldb-key? dst-db (format "~a" key))
-	      (dp (format "~a key already exists in dst" key))
-	      (leveldb-put dst-db key val))
-	    (leveldb-delete src-db key))
+	      (if (leveldb-key? dst-db (format "~a" key))
+	        (dp (format "~a key already exists in dst" key))
+	        (leveldb-put dst-db key val))
+	      (leveldb-delete src-db key))
       (leveldb-iterator-next itor)
       (if (leveldb-iterator-valid? itor)
-	    (lp)
-	    (begin
-	      (leveldb-close src-db)
-	      (leveldb-close dst-db))))))
+	      (lp)
+	      (begin
+	        (leveldb-close src-db)
+	        (leveldb-close dst-db))))))
 
 (def (db-get key)
   (dp (format "db-get: ~a" key))
@@ -630,20 +630,20 @@
       (if (leveldb-iterator-valid? itor)
         (begin
           (if (pregexp-match key (utf8->string (leveldb-iterator-key itor)))
-	        (begin
-	          (displayln (format "Found one ~a" (utf8->string (leveldb-iterator-key itor))))
-	          (lp (1+ count)))
-	        (lp count)))
+	          (begin
+	            (displayln (format "Found one ~a" (utf8->string (leveldb-iterator-key itor))))
+	            (lp (1+ count)))
+	          (lp count)))
         count))))
 
 (def (countdb)
   "Get a count of how many records are in db"
   (let ((mod 1000000)
-	    (itor (leveldb-iterator db)))
+	      (itor (leveldb-iterator db)))
     (leveldb-iterator-seek-first itor)
     (let lp ((count 1))
       (when (= (modulo count mod) 0)
-	    (displayln count))
+	      (displayln count))
       (leveldb-iterator-next itor)
       (if (leveldb-iterator-valid? itor)
         (lp (1+ count))
