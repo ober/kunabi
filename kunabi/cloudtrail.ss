@@ -458,7 +458,7 @@
 			                  (set! username (format "~a/~a" .userName (cadr (pregexp-split ":" ...principalId))))))))
 		            (begin
 		              (displayln (format "Fall thru find-user ~a~%" (hash->list ui)))
-		              (set! username (nth 2 (pregexp-split ":" .principalId)))))) ;; not found go with this for now.
+		              (set! username (cadr (pregexp-split ":" .principalId)))))) ;; not found go with this for now.
 	           ((string=? "AWSService" type)
 	            (set! username (hash-get ui 'invokedBy)))
 	           ((string=? "Root" type)
