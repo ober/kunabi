@@ -526,11 +526,11 @@
 
 (def (db-batch key value)
   (unless (string? key) (dp (format "key: ~a val: ~a" (##type-id key) (##type-id value))))
-  (leveldb-writebatch-put wb key (object->u8vector value)))
+  (leveldb-writebatch-put wb key (marshal-value value)))
 
 (def (db-put key value)
   (dp (format "<----> db-put: key: ~a val: ~a" key value))
-  (leveldb-put db key (object->u8vector value)))
+  (leveldb-put db key (marshal-value value)))
 
 (def (db-rm key)
   (dp (format "<----> db-rm: key: ~a" key))
