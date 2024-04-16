@@ -254,11 +254,10 @@
 
 (def (load-ct-file file)
   (hash-ref
-   (parameterize ((read-json-key-as-symbol? #t))
      (read-json
       (open-input-string
        (utf8->string
-        (uncompress file)))))
+        (uncompress file))))
    'Records))
 
 (def (read-ct-file file)
