@@ -24,6 +24,7 @@
   :std/text/zlib
   :ober/oberlib
   :std/actor-v18/io
+  :std/io
   )
 
 (def version "0.08")
