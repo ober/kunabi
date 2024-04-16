@@ -119,9 +119,10 @@
   (for-each displayln (list-users)))
 
 (def (index-user)
-  (let ((index "user!index"))
+  (let ((index "user!index")
+        (buf (open-buffered-writer #f)))
     (db-rm index)
-    (db-put index (list-users))))
+    (db-put index (list-users) buf)))
 
 (def (list-users)
   (let (index "user!index")
