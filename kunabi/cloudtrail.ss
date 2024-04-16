@@ -119,7 +119,7 @@
   (for-each displayln (list-users)))
 
 (def (index-user)
-  (let ((index "user!index")
+  (let ((index "user!index"))
     (db-rm index)
     (db-put index (list-users))))
 
