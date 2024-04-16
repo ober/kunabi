@@ -128,7 +128,7 @@
   (let (index "user!index")
     (if (db-key? index)
       (db-get index)
-      (let ((buf (open-buffered-writer #f)))
+      (let ((buf (open-buffered-writer #f))
             (entries
 	           (sort-uniq-reverse
 	            (uniq-by-mid-prefix "u#"))))
@@ -137,184 +137,184 @@
 
 ;; events
 (def (le)
-  (for-each displayln (list-events)))
+(for-each displayln (list-events)))
 
 (def (index-event)
-  (let ((index "event!index"))
-    (db-rm index)
-    (db-put index (list-events))))
+(let ((index "event!index"))
+  (db-rm index)
+  (db-put index (list-events))))
 
 (def (list-events)
-  (let (index "event!index")
-    (if (db-key? index)
-      (db-get index)
-      (let ((buf (open-buffered-writer #f))
-            (entries
-	           (sort-uniq-reverse
-	            (uniq-by-mid-prefix "en#"))))
-        (db-put index entries buf)
-        entries))))
+(let (index "event!index")
+  (if (db-key? index)
+    (db-get index)
+    (let ((buf (open-buffered-writer #f))
+          (entries
+	         (sort-uniq-reverse
+	          (uniq-by-mid-prefix "en#"))))
+      (db-put index entries buf)
+      entries))))
 
 ;; error codes
 (def (lec)
-  (for-each displayln (list-errorCodes)))
+(for-each displayln (list-errorCodes)))
 
 (def (index-errorCode)
-  (let ((index "event!errorCode"))
-    (db-rm index)
-    (db-put index (list-errorCodes))))
+(let ((index "event!errorCode"))
+  (db-rm index)
+  (db-put index (list-errorCodes))))
 
 (def (list-errorCodes)
-  (let (index "event!errorCode")
-    (if (db-key? index)
-      (db-get index)
-      (let ((buf (open-buffered-writer #f))
-            (entries
-	           (sort-uniq-reverse
-	            (uniq-by-mid-prefix "ec#"))))
-        (db-put index entries buf)
-        entries))))
+(let (index "event!errorCode")
+  (if (db-key? index)
+    (db-get index)
+    (let ((buf (open-buffered-writer #f))
+          (entries
+	         (sort-uniq-reverse
+	          (uniq-by-mid-prefix "ec#"))))
+      (db-put index entries buf)
+      entries))))
 
 (def (match-key key)
-  (resolve-records (resolve-by-key key)))
+(resolve-records (resolve-by-key key)))
 
 (def (report user)
-  (displayln "** Total by Source IP")
-  (tally-by-ip
-   (resolve-by-key
-    (format "u#~a#" user)))
-  (displayln "** Total by Event Name")
-  (tally-by-en
-   (resolve-by-key
-    (format "u#~a#" user))))
+(displayln "** Total by Source IP")
+(tally-by-ip
+ (resolve-by-key
+  (format "u#~a#" user)))
+(displayln "** Total by Event Name")
+(tally-by-en
+ (resolve-by-key
+  (format "u#~a#" user))))
 
 (def (reports)
-  (for (user (list-users))
-    (displayln (format "*** ~A" user))
-    (report user)))
+(for (user (list-users))
+  (displayln (format "*** ~A" user))
+  (report user)))
 
 (def (sn key)
-  (match-key (format "u#~a#" key)))
+(match-key (format "u#~a#" key)))
 
 (def (se key)
-  (match-key (format "en#~a#" key)))
+(match-key (format "en#~a#" key)))
 
 (def (sec key)
-  (match-key (format "ec#~a#" key)))
+(match-key (format "ec#~a#" key)))
 
 (def (st)
-  (displayln "Totals: " " records: " (countdb)))
+(displayln "Totals: " " records: " (countdb)))
 
 (def (read file)
-  (read-ct-file file))
+(read-ct-file file))
 
 (def (ct file)
-  (load-ct file))
+(load-ct file))
 
 (def (find-ct-files dir)
-  (find-files
-   dir
-   (lambda (filename)
-     (and (equal? (path-extension filename) ".gz")
-	        (not (equal? (path-strip-directory filename) ".gz"))))))
+(find-files
+ dir
+ (lambda (filename)
+   (and (equal? (path-extension filename) ".gz")
+	      (not (equal? (path-strip-directory filename) ".gz"))))))
 
 (def (load-ct dir)
-  "Entry point for processing cloudtrail files"
-  (dp (format ">-- load-ct: ~a" dir))
-  ;;(spawn watch-heap!)
-  (let* ((count 0)
-	       (ct-files (find-ct-files "."))
-         (pool []))
-    (for (file ct-files)
-      (cond-expand
-        (gerbil-smp
-         (while (< tmax (length (all-threads)))
-	         (thread-yield!))
-         (let ((thread (spawn (lambda () (read-ct-file file)))))
-	         (set! pool (cons thread pool))))
-        (else
-         (read-ct-file file)))
-      (flush-all?)
-      (set! count 0))
-    (cond-expand (gerbil-smp (for-each thread-join! pool)))
-    (db-write)
-    (db-close)))
+"Entry point for processing cloudtrail files"
+(dp (format ">-- load-ct: ~a" dir))
+;;(spawn watch-heap!)
+(let* ((count 0)
+	     (ct-files (find-ct-files "."))
+       (pool []))
+  (for (file ct-files)
+    (cond-expand
+      (gerbil-smp
+       (while (< tmax (length (all-threads)))
+	       (thread-yield!))
+       (let ((thread (spawn (lambda () (read-ct-file file)))))
+	       (set! pool (cons thread pool))))
+      (else
+       (read-ct-file file)))
+    (flush-all?)
+    (set! count 0))
+  (cond-expand (gerbil-smp (for-each thread-join! pool)))
+  (db-write)
+  (db-close)))
 
 (def (file-already-processed? file)
-  (dp "in file-already-processed?")
-  (let* ((short (get-short file))
-         (seen (db-key? (format "F-~a" short))))
-    seen))
+(dp "in file-already-processed?")
+(let* ((short (get-short file))
+       (seen (db-key? (format "F-~a" short))))
+  seen))
 
 (def (mark-file-processed file)
-  (dp "in mark-file-processed")
-  (let ((short (get-short file)))
-    (format "marking ~A~%" file)
-    (db-batch (format "F-~a" short) "t")))
+(dp "in mark-file-processed")
+(let ((short (get-short file)))
+  (format "marking ~A~%" file)
+  (db-batch (format "F-~a" short) "t")))
 
 (def (load-ct-file file)
-  (hash-ref
-   (parameterize ((read-json-key-as-symbol? #t))
-     (read-json
-      (open-input-string
-       (utf8->string
-        (uncompress file)))))
-   'Records))
+(hash-ref
+ (parameterize ((read-json-key-as-symbol? #t))
+   (read-json
+    (open-input-string
+     (utf8->string
+      (uncompress file)))))
+ 'Records))
 
 (def (read-ct-file file)
-  (ensure-db)
-  (dp (format "read-ct-file: ~a" file))
-  (unless (file-already-processed? file)
-    (let ((btime (time->seconds (current-time)))
-	        (count 0))
-      (dp (memory-usage))
-      (call-with-input-file file
-	      (lambda (file-input)
-	        (let ((mytables (load-ct-file file-input)))
-            (for-each
-	            (lambda (row)
-                (set! count (+ count 1))
-                (process-row row))
-	            mytables))
-          (mark-file-processed file)))
+(ensure-db)
+(dp (format "read-ct-file: ~a" file))
+(unless (file-already-processed? file)
+  (let ((btime (time->seconds (current-time)))
+	      (count 0))
+    (dp (memory-usage))
+    (call-with-input-file file
+	    (lambda (file-input)
+	      (let ((mytables (load-ct-file file-input)))
+          (for-each
+	          (lambda (row)
+              (set! count (+ count 1))
+              (process-row row))
+	          mytables))
+        (mark-file-processed file)))
 
-      (let ((delta (- (time->seconds (current-time)) btime)))
-        (displayln
-         "rps: " (float->int (/ count delta ))
-         " size: " count
-         " delta: " delta
-         " threads: " (length (all-threads))
-	       " file: " file
-	       )))))
+    (let ((delta (- (time->seconds (current-time)) btime)))
+      (displayln
+       "rps: " (float->int (/ count delta ))
+       " size: " count
+       " delta: " delta
+       " threads: " (length (all-threads))
+	     " file: " file
+	     )))))
 
 (def (number-only obj)
-  (if (number? obj)
-    obj
-    (string->number obj)))
+(if (number? obj)
+  obj
+  (string->number obj)))
 
 (def (get-short str)
-  (cond
-   ((string-rindex str #\_)
-    =>
-    (lambda (ix)
-      (cond
-       ((string-index str #\. ix)
-	      =>
-        (lambda (jx)
-	        (substring str (1+ ix) jx)))
-       (else #f))))
-   (else str)))
+(cond
+ ((string-rindex str #\_)
+  =>
+  (lambda (ix)
+    (cond
+     ((string-index str #\. ix)
+	    =>
+      (lambda (jx)
+	      (substring str (1+ ix) jx)))
+     (else #f))))
+ (else str)))
 
 (def (flush-all?)
-  (dp (format "write-back-count && max-wb-size ~a ~a" write-back-count max-wb-size))
-  (when (> write-back-count max-wb-size)
-    (displayln "writing.... " write-back-count)
-    (let ((old wb))
-      (spawn
-       (lambda ()
-	       (leveldb-write db old)))
-      (set! wb (leveldb-writebatch))
-      (set! write-back-count 0))))
+(dp (format "write-back-count && max-wb-size ~a ~a" write-back-count max-wb-size))
+(when (> write-back-count max-wb-size)
+  (displayln "writing.... " write-back-count)
+  (let ((old wb))
+    (spawn
+     (lambda ()
+	     (leveldb-write db old)))
+    (set! wb (leveldb-writebatch))
+    (set! write-back-count 0))))
 
 (def (get-last-key)
   "Get the last key for use in compaction"
