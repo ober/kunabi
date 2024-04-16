@@ -161,9 +161,10 @@
   (for-each displayln (list-errorCodes)))
 
 (def (index-errorCode)
-  (let ((index "event!errorCode"))
+  (let ((index "event!errorCode")
+        (buf (open-buffered-writer #f)))
     (db-rm index)
-    (db-put index (list-errorCodes))))
+    (db-put index (list-errorCodes) buf)))
 
 (def (list-errorCodes)
   (let (index "event!errorCode")
@@ -249,9 +250,10 @@
 
 (def (mark-file-processed file)
   (dp "in mark-file-processed")
-  (let ((short (get-short file)))
+  (let ((short (get-short file))
+        (buf (open-buffered-writer #f)))
     (format "marking ~A~%" file)
-    (db-batch (format "F-~a" short) "t")))
+    (db-batch (format "F-~a" short) "t" buf)))
 
 (def (load-ct-file file)
   (hash-ref
@@ -435,12 +437,13 @@
   (if (ip? ip)
     (let* ((idx (format "H-~a" ip))
 	         (lookup (host-info ip))
-	         (resolved? (db-key? idx)))
+	         (resolved? (db-key? idx))
+           (buf (open-buffered-writer #f)))
       (unless resolved?
         (when (host-info? lookup)
           (let ((lookup-name (host-info-name lookup)))
 	          (unless (string=? lookup-name ip)
-	            (db-batch (format "H-~a" ip) lookup-name))))))))
+	            (db-batch (format "H-~a" ip) lookup-name buf))))))))
 
 (def (find-user ui)
   ;;(dp (format "+find-user ~a" (hash->list ui)))
@@ -523,15 +526,17 @@
 
 ;; db stuff
 
-(def (hash-it obj)
-  "First we get the hash, then check if it exists, if not add it. return hash"
-  (if obj
-    (let* ((digest (hex-encode (md5 (object->u8vector obj))))
-	         (exists (db-get digest)))
-      (unless exists
-	      (db-put digest obj))
-      digest)
-    obj))
+;; (def (hash-it obj)
+;;   "First we get the hash, then check if it exists, if not add it. return hash"
+;;   (if obj
+;;     (let* ((digest (hex-encode (md5 (object->u8vector obj))))
+;; 	         (exists (db-get digest))
+
+
+;;       (unless exists
+;; 	      (db-put digest obj))
+;;       digest)
+;;     obj))
 
 (def (db-batch key value buf)
   (unless (string? key) (dp (format "key: ~a val: ~a" (##type-id key) (##type-id value))))
@@ -568,6 +573,7 @@
 (def (db-copy src dst)
   "Copy all item from src to dst"
   (let* ((src-db (leveldb-open (format "~a/records" src)))
+         (buf (open-buffered-writer #f))
 	       (itor (leveldb-iterator src-db))
 	       (dst-db (leveldb-open (format "~a/records" dst))))
     (leveldb-iterator-seek-first itor)
@@ -576,7 +582,7 @@
             (val (leveldb-iterator-value itor)))
 	      (if (leveldb-key? dst-db (format "~a" key))
 	        (dp (format "~a key already exists in dst" key))
-	        (leveldb-put dst-db key val))
+	        (leveldb-put dst-db key val buf))
 	      (leveldb-delete src-db key))
       (leveldb-iterator-next itor)
       (if (leveldb-iterator-valid? itor)
