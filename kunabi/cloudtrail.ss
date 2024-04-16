@@ -140,9 +140,10 @@
   (for-each displayln (list-events)))
 
 (def (index-event)
-  (let ((index "event!index"))
+  (let ((buf (open-buffered-writer #f))
+        (index "event!index"))
     (db-rm index)
-    (db-put index (list-events))))
+    (db-put index (list-events) buf)))
 
 (def (list-events)
   (let (index "event!index")
