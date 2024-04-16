@@ -479,7 +479,8 @@
     (dp (hash->string row))
     (let*
 	      ((user (find-user .?userIdentity))
-	       (req-id (or .?requestID .?eventID))
+         (buf (open-buffered-writer #f))
+         (req-id (or .?requestID .?eventID))
 	       (epoch (date->epoch2 .?eventTime))
 	       (h (hash
 	           ;;(ar .?awsRegion)
@@ -501,15 +502,15 @@
 
       (unless (getenv "kunabiro" #f)
         (set! write-back-count (+ write-back-count 1))
-        (db-batch req-id h)
+        (db-batch req-id h buf)
         (when (string=? user "")
           (displayln "Error: missing user: " user))
         (when (string? user)
-	        (db-batch (format "u#~a#~a" user epoch) req-id))
+	        (db-batch (format "u#~a#~a" user epoch) req-id buf))
         (when (string? .?eventName)
-	        (db-batch (format "en#~a#~a" .?eventName epoch) req-id))
+	        (db-batch (format "en#~a#~a" .?eventName epoch) req-id buf))
         (when (string? .?errorCode)
-	        (db-batch (format "ec#~a#~a" .errorCode epoch) req-id))
+	        (db-batch (format "ec#~a#~a" .errorCode epoch) req-id buf))
         ))))
 
 ;; db stuff
@@ -524,13 +525,13 @@
       digest)
     obj))
 
-(def (db-batch key value)
+(def (db-batch key value buf)
   (unless (string? key) (dp (format "key: ~a val: ~a" (##type-id key) (##type-id value))))
-  (leveldb-writebatch-put wb key (marshal-value value)))
+  (leveldb-writebatch-put wb key (marshal-value value buf)))
 
-(def (db-put key value)
+(def (db-put key value buf)
   (dp (format "<----> db-put: key: ~a val: ~a" key value))
-  (leveldb-put db key (marshal-value value)))
+  (leveldb-put db key (marshal-value value buf)))
 
 (def (db-rm key)
   (dp (format "<----> db-rm: key: ~a" key))
