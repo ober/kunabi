@@ -214,7 +214,7 @@
 (def (load-ct dir)
   "Entry point for processing cloudtrail files"
   (dp (format ">-- load-ct: ~a" dir))
-  (spawn watch-heap!)
+  ;;(spawn watch-heap!)
   (let* ((count 0)
 	       (ct-files (find-ct-files "."))
          (pool []))
