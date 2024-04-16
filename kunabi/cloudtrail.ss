@@ -22,7 +22,9 @@
   :clan/text/yaml
   :std/text/hex
   :std/text/zlib
-  :ober/oberlib)
+  :ober/oberlib
+  :std/actor-v18/io
+  )
 
 (def version "0.08")
 
