@@ -128,11 +128,12 @@
   (let (index "user!index")
     (if (db-key? index)
       (db-get index)
-      (let (entries
-	          (sort-uniq-reverse
-	           (uniq-by-mid-prefix "u#")))
-        (db-put index entries)
-        entries))))
+      (let ((buf (buf (open-buffered-writer #f)))
+            (entries
+	           (sort-uniq-reverse
+	            (uniq-by-mid-prefix "u#"))))
+            (db-put index entries buf)
+            entries))))
 
 ;; events
 (def (le)
@@ -147,11 +148,12 @@
   (let (index "event!index")
     (if (db-key? index)
       (db-get index)
-      (let (entries
-	          (sort-uniq-reverse
-	           (uniq-by-mid-prefix "en#")))
-        (db-put index entries)
-        entries))))
+      (let ((buf (open-buffered-writer #f)))
+            (entries
+	           (sort-uniq-reverse
+	            (uniq-by-mid-prefix "en#"))))
+            (db-put index entries buf)
+            entries))))
 
 ;; error codes
 (def (lec)
@@ -166,10 +168,11 @@
   (let (index "event!errorCode")
     (if (db-key? index)
       (db-get index)
-      (let (entries
-	          (sort-uniq-reverse
-	           (uniq-by-mid-prefix "ec#")))
-        (db-put index entries)
+      (let ((buf (open-buffered-writer #f))
+            (entries
+	           (sort-uniq-reverse
+	            (uniq-by-mid-prefix "ec#"))))
+        (db-put index entries buf)
         entries))))
 
 (def (match-key key)
