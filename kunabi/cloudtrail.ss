@@ -120,19 +120,17 @@
 
 (def (index-user)
   (let ((index "user!index")
-        (buf (open-buffered-writer #f)))
     (db-rm index)
-    (db-put index (list-users) buf)))
+    (db-put index (list-users))))
 
 (def (list-users)
   (let (index "user!index")
     (if (db-key? index)
       (db-get index)
-      (let ((buf (open-buffered-writer #f))
-            (entries
+      (let ((entries
 	           (sort-uniq-reverse
 	            (uniq-by-mid-prefix "u#"))))
-        (db-put index entries buf)
+        (db-put index entries)
         entries))))
 
 ;; events
@@ -140,20 +138,18 @@
   (for-each displayln (list-events)))
 
 (def (index-event)
-  (let ((buf (open-buffered-writer #f))
-        (index "event!index"))
+  (let ((index "event!index"))
     (db-rm index)
-    (db-put index (list-events) buf)))
+    (db-put index (list-events))))
 
 (def (list-events)
   (let (index "event!index")
     (if (db-key? index)
       (db-get index)
-      (let ((buf (open-buffered-writer #f))
-            (entries
+      (let ((entries
 	           (sort-uniq-reverse
 	            (uniq-by-mid-prefix "en#"))))
-        (db-put index entries buf)
+        (db-put index entries)
         entries))))
 
 ;; error codes
@@ -161,20 +157,18 @@
   (for-each displayln (list-errorCodes)))
 
 (def (index-errorCode)
-  (let ((index "event!errorCode")
-        (buf (open-buffered-writer #f)))
+  (let ((index "event!errorCode"))
     (db-rm index)
-    (db-put index (list-errorCodes) buf)))
+    (db-put index (list-errorCodes))))
 
 (def (list-errorCodes)
   (let (index "event!errorCode")
     (if (db-key? index)
       (db-get index)
-      (let ((buf (open-buffered-writer #f))
-            (entries
+      (let ((entries
 	           (sort-uniq-reverse
 	            (uniq-by-mid-prefix "ec#"))))
-        (db-put index entries buf)
+        (db-put index entries)
         entries))))
 
 (def (match-key key)
@@ -250,10 +244,9 @@
 
 (def (mark-file-processed file)
   (dp "in mark-file-processed")
-  (let ((short (get-short file))
-        (buf (open-buffered-writer #f)))
+  (let ((short (get-short file)))
     (format "marking ~A~%" file)
-    (db-batch (format "F-~a" short) "t" buf)))
+    (db-batch (format "F-~a" short) "t")))
 
 (def (load-ct-file file)
   (hash-ref
@@ -437,13 +430,12 @@
   (if (ip? ip)
     (let* ((idx (format "H-~a" ip))
 	         (lookup (host-info ip))
-	         (resolved? (db-key? idx))
-           (buf (open-buffered-writer #f)))
+	         (resolved? (db-key? idx)))
       (unless resolved?
         (when (host-info? lookup)
           (let ((lookup-name (host-info-name lookup)))
 	          (unless (string=? lookup-name ip)
-	            (db-batch (format "H-~a" ip) lookup-name buf))))))))
+	            (db-batch (format "H-~a" ip) lookup-name))))))))
 
 (def (find-user ui)
   ;;(dp (format "+find-user ~a" (hash->list ui)))
@@ -490,7 +482,6 @@
     (dp (hash->string row))
     (let*
 	      ((user (find-user .?userIdentity))
-         (buf (open-buffered-writer #f))
          (req-id (or .?requestID .?eventID))
 	       (epoch (date->epoch2 .?eventTime))
 	       (h (hash
@@ -513,15 +504,15 @@
 
       (unless (getenv "kunabiro" #f)
         (set! write-back-count (+ write-back-count 1))
-        (db-batch req-id h buf)
+        (db-batch req-id h)
         (when (string=? user "")
           (displayln "Error: missing user: " user))
         (when (string? user)
-	        (db-batch (format "u#~a#~a" user epoch) req-id buf))
+	        (db-batch (format "u#~a#~a" user epoch) req-id))
         (when (string? .?eventName)
-	        (db-batch (format "en#~a#~a" .?eventName epoch) req-id buf))
+	        (db-batch (format "en#~a#~a" .?eventName epoch) req-id))
         (when (string? .?errorCode)
-	        (db-batch (format "ec#~a#~a" .errorCode epoch) req-id buf))
+	        (db-batch (format "ec#~a#~a" .errorCode epoch) req-id))
         ))))
 
 ;; db stuff
@@ -538,13 +529,13 @@
 ;;       digest)
 ;;     obj))
 
-(def (db-batch key value buf)
+(def (db-batch key value)
   (unless (string? key) (dp (format "key: ~a val: ~a" (##type-id key) (##type-id value))))
-  (leveldb-writebatch-put wb key (marshal-value value buf)))
+  (leveldb-writebatch-put wb key (marshal-value value)))
 
-(def (db-put key value buf)
+(def (db-put key value)
   (dp (format "<----> db-put: key: ~a val: ~a" key value))
-  (leveldb-put db key (marshal-value value buf)))
+  (leveldb-put db key (marshal-value value)))
 
 (def (db-rm key)
   (dp (format "<----> db-rm: key: ~a" key))
@@ -573,7 +564,6 @@
 (def (db-copy src dst)
   "Copy all item from src to dst"
   (let* ((src-db (leveldb-open (format "~a/records" src)))
-         (buf (open-buffered-writer #f))
 	       (itor (leveldb-iterator src-db))
 	       (dst-db (leveldb-open (format "~a/records" dst))))
     (leveldb-iterator-seek-first itor)
@@ -582,7 +572,7 @@
             (val (leveldb-iterator-value itor)))
 	      (if (leveldb-key? dst-db (format "~a" key))
 	        (dp (format "~a key already exists in dst" key))
-	        (leveldb-put dst-db key val buf))
+	        (leveldb-put dst-db key val))
 	      (leveldb-delete src-db key))
       (leveldb-iterator-next itor)
       (if (leveldb-iterator-valid? itor)
