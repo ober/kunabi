@@ -128,7 +128,7 @@
   (let (index "user!index")
     (if (db-key? index)
       (db-get index)
-      (let ((buf (buf (open-buffered-writer #f)))
+      (let ((buf (open-buffered-writer #f)))
             (entries
 	           (sort-uniq-reverse
 	            (uniq-by-mid-prefix "u#"))))
