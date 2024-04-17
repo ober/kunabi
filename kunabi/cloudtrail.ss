@@ -216,6 +216,10 @@
 
 (def (load-ct dir)
   "Entry point for processing cloudtrail files"
+  (let (2G (expt 2 31))
+    (when (< (##get-min-heap) 2G)
+      (##set-min-heap! 2G)))
+
   (dp (format ">-- load-ct: ~a" dir))
   ;;(spawn watch-heap!)
   (let* ((count 0)
