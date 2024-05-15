@@ -95,7 +95,7 @@
     (leveldb-iterator-seek itor (format "~a#" key))
     (let lp ((res '()))
       (if (leveldb-iterator-valid? itor)
-        (let ((k (unmarshal-value (leveldb-iterator-key itor))))
+        (let ((k (utf8->string (leveldb-iterator-key itor))))
           (dp (format "k is ~a" k))
           (if (pregexp-match key k)
             (let ((mid (nth 1 (pregexp-split "#" k))))
