@@ -253,12 +253,13 @@
     (db-batch (format "F-~a" short) "t")))
 
 (def (load-ct-file file)
-  (hash-ref
-     (read-json
-      (open-input-string
-       (utf8->string
-        (uncompress file))))
-   'Records))
+     (parameterize ((read-json-key-as-symbol? #t))
+       (hash-ref
+        (read-json
+         (open-input-string
+          (utf8->string
+           (uncompress file))))
+        'Records)))
 
 (def (read-ct-file file)
   (ensure-db)
