@@ -362,7 +362,7 @@
 
   (def (resolve-records ids)
     (when (list? ids)
-      (let ((outs [[ "Date" "Name" "User" "Source" "Hostname" "Type" "Request" "User Agent" "Error Code" "Error Message"]]))
+      (let ((outs [[ "Date" "Name" "User" "Source" "Hostname" "Type" "Request" "User Agent" "Error Code" "Error Message" "RequestParameters"]]))
         (for (id ids)
           (let ((id2 (db-get id)))
 	          (when (hash-table? id2)
@@ -378,6 +378,7 @@
 				                          .?ua
 				                          .?ec
 				                          .?em
+                                  .?rp
                                   ;;				(if (hash-table? .?ui) (hash->list .?ui) .?ui)
 				                          ] outs))))))
         (style-output outs "org-mode"))))
@@ -502,9 +503,9 @@
 	             (time .?eventTime)
 	             (et .?eventType)
 	             (rid .?recipientAccountId)
-	             ;;(rp (hash-it .?requestParameters))
+	             (rp .?requestParameters)
 	             (user user)
-	             ;;(re (hash-it .?responseElements))
+	             (re .?responseElements)
 	             (sia .?sourceIPAddress)
 	             (ua .?userAgent)
 	             ;;(ui (hash-it .?userIdentity))
@@ -524,18 +525,6 @@
           ))))
 
   ;; db stuff
-
-  ;; (def (hash-it obj)
-  ;;   "First we get the hash, then check if it exists, if not add it. return hash"
-  ;;   (if obj
-  ;;     (let* ((digest (hex-encode (md5 (object->u8vector obj))))
-  ;; 	         (exists (db-get digest))
-
-
-  ;;       (unless exists
-  ;; 	      (db-put digest obj))
-  ;;       digest)
-  ;;     obj))
 
   (def (db-batch key value)
     (unless (string? key) (dp (format "key: ~a val: ~a" (##type-id key) (##type-id value))))
