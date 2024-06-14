@@ -344,20 +344,22 @@
     (let ((results []))
       (when rp
         (when (hash-table? rp)
-	        (let-hash rp
-	          (when .?instancesSet
-	            (when (hash-table? .instancesSet)
-	              (let-hash .instancesSet
-		              (when .?items
-		                (when (list? .items)
-		                  (for-each
-		                    (lambda (x)
-			                    (when (hash-table? x)
-			                      (hash-for-each
-			                       (lambda (k v)
-			                         (set! results (cons v results)))
-			                       x)))
-		                    .items)))))))))
+          (set! results (cons rp results))))
+	    ;;     (let-hash rp
+
+      ;;       (when .?instancesSet
+	    ;;         (when (hash-table? .instancesSet)
+	    ;;           (let-hash .instancesSet
+		  ;;             (when .?items
+		  ;;               (when (list? .items)
+		  ;;                 (for-each
+		  ;;                   (lambda (x)
+			;;                     (when (hash-table? x)
+			;;                       (hash-for-each
+			;;                        (lambda (k v)
+			;;                          (set! results (cons v results)))
+			;;                        x)))
+		  ;;                   .items)))))))))
       (string-join results " ")))
 
   (def (resolve-records ids)
@@ -378,7 +380,7 @@
 				                          .?ua
 				                          .?ec
 				                          .?em
-                                  .?rp
+                                  ;;.?rp
                                   ;;				(if (hash-table? .?ui) (hash->list .?ui) .?ui)
 				                          ] outs))))))
         (style-output outs "org-mode"))))
