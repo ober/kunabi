@@ -482,7 +482,9 @@
 		              (let-hash .?sessionContext
 		                (when (hash-table? .?sessionIssuer)
 		                  (set! username (hash-ref .?sessionIssuer 'userName))))))
-	             (else
+               ((= type #f)
+                (set! username (format "~a-~a" .?invokedBy .?accountId)))
+               (else
 	              (set! username (format "Unknown Type: ~a" (hash->str ui)))))
 	            (displayln "error: type :" type " not found in ui" (hash->str ui))))))
       username))
