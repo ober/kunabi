@@ -9,5 +9,5 @@
      "kunabi/main"
      bin: "kunabi"
      "-ld-options"
-     "-lyaml -lleveldb -lstdc++ -lssl -lcrypto -lz -lm"
+     "-lyaml -lleveldb -lstdc++ -lssl -lcrypto -lz -lm -lutil"
      )))
