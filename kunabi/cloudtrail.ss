@@ -482,7 +482,7 @@
 		              (let-hash .?sessionContext
 		                (when (hash-table? .?sessionIssuer)
 		                  (set! username (hash-ref .?sessionIssuer 'userName))))))
-               ((= type #f)
+               ((boolean=? type #f)
                 (set! username (format "~a-~a" .?invokedBy .?accountId)))
                (else
 	              (set! username (format "Unknown Type: ~a" (hash->str ui)))))
