@@ -358,9 +358,11 @@
 			                       (set! results (cons v results)))
 			                     x)))
 		                  .items))))))
+
+          (when .?lookupAttributes
+            (set! results (hash->string .lookupAttributes) results))
           (when .?roleName
             (set! results (cons .roleName results)))
-
           (when .?bucketName
             (set! results (cons .bucketName results)))
           (when .?functionName
