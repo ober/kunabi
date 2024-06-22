@@ -344,7 +344,6 @@
   (let ((results []))
     (when rp
       (when (hash-table? rp)
-        ;;        (set! results (cons rp results))
 	      (let-hash rp
           (cond
            ((.?instanceSet)
@@ -371,7 +370,7 @@
             (set! results (cons .resourceArn results)))
            (else
             (begin
-              (displayln "unhandled rp type ~a" (##type-id))
+              (displayln "unhandled rp type ~a" (hash->string rp))
               (set! results (cons (hash->string rp) results))))))))
     (string-join results " ")))
 
@@ -389,7 +388,7 @@
 				                        .?es
 				                        .?sia
 				                        .?et
-				                        (if (hash-table? .?rp) (print-rp .?rp) .?rp)
+                                .?rp
 				                        .?ua
 				                        .?ec
 				                        .?em
@@ -518,7 +517,7 @@
 	           (time .?eventTime)
 	           (et .?eventType)
 	           (rid .?recipientAccountId)
-	           (rp .?requestParameters)
+	           (rp (print-rp .?requestParameters))
 	           (user user)
 	           (re .?responseElements)
 	           (sia .?sourceIPAddress)
