@@ -383,9 +383,9 @@
                   (when (hash-table? item)
                     (set! results (cons (format "~a: ~a" .name .valueSet.items.value) results)))))))
            (else
-            (begin
-              (displayln "unhandled rp type ~a" (hash->string rp))
-              (set! results (cons (hash->string rp) results))))))))
+            (displayln "unhandled rp type ~a" (hash->string rp))
+            (set! results (cons (hash->string rp) results))
+            )))))
     (string-join results " ")))
 
 (def (resolve-records ids)
