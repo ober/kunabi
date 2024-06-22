@@ -369,7 +369,7 @@
             (set! results (cons .GroupName results)))
           (when .?lookupAttributes
             (when (list? .lookupAttributes)
-              (set! results (cons .lookupAttributes results))))
+              (set! results (cons (hash->string (car .lookupAttributes)) results))))
           (when .?filter
             (when (hash-table? .filter)
               (set! results (cons (hash->string .filter) results))))
