@@ -452,7 +452,7 @@
             (displayln "unhandled rp type: " (hash->string rp))
             (set! results (cons (hash->string rp) results))
             ))))
-    (dp (format "results: ~a" results))
+    (displayln (format "results: ~a" results))
     (string-join results " ")))
 
 
