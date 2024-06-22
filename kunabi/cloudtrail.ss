@@ -452,7 +452,7 @@
             (displayln "unhandled rp type: " (hash->string rp))
             (set! results (cons (hash->string rp) results))
             ))))
-    (displayln (format "results: ~a" results))
+    ;;(displayln (format "results: ~a" results))
     (string-join (flatten results) "")))
 
 (def (resolve-records ids)
