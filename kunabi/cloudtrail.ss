@@ -455,7 +455,6 @@
     (displayln (format "results: ~a" results))
     (string-join (flatten results) "")))
 
-
 (def (resolve-records ids)
   (when (list? ids)
     (let ((outs [[ "Date" "Name" "User" "Source" "Hostname" "Type" "Request" "User Agent" "Error Code" "Error Message"]]))
