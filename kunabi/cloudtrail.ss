@@ -368,7 +368,7 @@
             (when (hash-table? .filter)
               (set! results (cons (hash->string .filter) results))))
           (when .?lookupAttributes
-            (when (hash-table .lookupAttributes)
+            (when (hash-table? .lookupAttributes)
               (set! results (cons (hash->string .lookupAttributes) results))))
           (when .?roleName
             (set! results (cons .roleName results)))
