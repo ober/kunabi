@@ -395,6 +395,12 @@
           (when .?Host
             (set! results (cons .Host results)))
 
+          (when .?dBInstanceIdentifer
+            (set! results (cons .dBInstanceIdentifer results)))
+
+          (when .?DescribeInstanceCreditSpecificationsRequest
+            (set! results (cons (hash->string .DescribeInstanceCreditSpecificationsRequest) results)))
+
           (when .?targetGroupArn
             (set! results (cons .targetGroupArn results)))
 
@@ -406,6 +412,12 @@
 
           (when .?resource
             (set! results (cons .resource results)))
+
+          (when .?expression
+            (set! results (cons .expression results)))
+
+          (when .?stackName
+            (set! results (cons .stackName results)))
 
           (when .?keyId
             (set! results (cons .keyId results)))
