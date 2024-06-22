@@ -386,9 +386,10 @@
           (when .?secretId
             (set! results (cons .secretId results)))
           (when .?encryptionContext
-            (let-hash .encryptionContext
-              (when .?SecretArn
-                (set! results (cons .SecretArn results)))))
+            (set! results (cons (hash->string .encryptionContext))))
+            ;; (let-hash .encryptionContext
+            ;;   (when .?SecretArn
+            ;;     (set! results (cons .SecretArn results)))))
           (when .?filterSet
             (when (hash-table? .filterSet)
               (let-hash .filterSet
