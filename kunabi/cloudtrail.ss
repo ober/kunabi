@@ -346,7 +346,7 @@
       (when (hash-table? rp)
 	      (let-hash rp
 
-          (when .?instanceSet
+          (when .?instancesSet
 	          (when (hash-table? .instancesSet)
 	            (let-hash .instancesSet
 		            (when .?items
