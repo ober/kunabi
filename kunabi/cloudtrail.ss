@@ -380,8 +380,13 @@
               (let-hash .filterSet
                 (for (item .items)
                   (when (hash-table? item)
-                    (set! results (cons (format "~a: ~a" .name .valueSet.items.value) results)))))))
-          (when (= (length results))
+                    (let-hash item
+                      (when .?valueSet
+                        (let-hash .valueSet
+                          (when .items
+                            (let-hash .items
+                              (set! results (cons (format "~a: ~a" ...name .value) results))))))))))))
+          (when (= (length results) 0)
             (displayln "unhandled rp type ~a" (hash->string rp))
             (set! results (cons (hash->string rp) results))
             ))))
