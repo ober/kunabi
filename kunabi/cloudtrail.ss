@@ -360,7 +360,7 @@
 		                  .items))))))
 
           (when .?lookupAttributes
-            (set! results (hash->string .lookupAttributes) results))
+            (set! results (cons (hash->string .lookupAttributes) results)))
           (when .?roleName
             (set! results (cons .roleName results)))
           (when .?bucketName
