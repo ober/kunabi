@@ -358,6 +358,9 @@
 			                       (set! results (cons v results)))
 			                     x)))
 		                  .items))))))
+          (when .?roleName
+            (set! results (cons .roleName results)))
+
           (when .?bucketName
             (set! results (cons .bucketName results)))
           (when .?functionName
