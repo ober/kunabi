@@ -359,6 +359,8 @@
 			                     x)))
 		                  .items))))))
 
+          (when .?filter
+            (set! results (cons (hash->string .filter) results)))
           (when .?lookupAttributes
             (set! results (cons (hash->string .lookupAttributes) results)))
           (when .?roleName
