@@ -361,6 +361,8 @@
 
           (when .?repositoryNames
             (set! results (cons .repositoryNames results)))
+          (when .?policyArn
+            (set! results (cons .policyArn results)))
           (when .?GroupName
             (set! results (cons .GroupName results)))
           (when .?filter
