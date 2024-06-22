@@ -453,7 +453,7 @@
             (set! results (cons (hash->string rp) results))
             ))))
     (displayln (format "results: ~a" results))
-    (string-join (flatten results) " ")))
+    (list->string (flatten results)))
 
 
 (def (resolve-records ids)
