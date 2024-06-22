@@ -386,9 +386,10 @@
                         (when (hash-table? .valueSet)
                           (let-hash .valueSet
                             (when .items
-                              (when (hash-table? .items)
-                                (let-hash .items
-                                  (set! results (cons (format "~a: ~a" ...name .value) results))))))))))))))
+                              (for (item .items)
+                                (when (hash-table? .item)
+                                  (let-hash .item
+                                    (set! results (cons (format "~a: ~a" ...name .value) results)))))))))))))))
           (when (= (length results) 0)
             (displayln "unhandled rp type ~a" (hash->string rp))
             (set! results (cons (hash->string rp) results))
