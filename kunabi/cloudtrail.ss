@@ -366,6 +366,7 @@
           (when .?GroupName
             (set! results (cons .GroupName results)))
           (when .?lookupAttributes
+            (displayln "lookupAttributes type: " (##type-id .lookupAttributes))
             (when (hash-table? .lookupAttributes)
               (set! results (cons (hash->string .lookupAttributes) results))))
           (when .?filter
