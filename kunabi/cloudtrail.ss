@@ -345,6 +345,7 @@
     (when rp
       (when (hash-table? rp)
 	      (let-hash rp
+
           (when .?instanceSet
 	          (when (hash-table? .instancesSet)
 	            (let-hash .instancesSet
@@ -392,7 +393,7 @@
                                     (let-hash item
                                       (set! results (cons (format "~a: ~a" ...name .value) results))))))))))))))))
           (when (= (length results) 0)
-            (displayln "unhandled rp type ~a" (hash->string rp))
+            (displayln "unhandled rp type: " (hash->string rp))
             (set! results (cons (hash->string rp) results))
             ))))
     (string-join results " ")))
