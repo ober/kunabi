@@ -368,9 +368,12 @@
           (when .?filter
             (when (hash-table? .filter)
               (set! results (cons (hash->string .filter) results))))
+          (when .?tagFilters
+            (when (hash-table? .tagFilters)
+              (set! results (cons (hash->string .tagFilters) results))))
           (when .?filters
-            (when (hash-table? .filter)
-              (set! results (cons (hash->string .filter) results))))
+            (when (hash-table? .filters)
+              (set! results (cons (hash->string .filters) results))))
           (when .?lookupAttributes
             (when (hash-table? .lookupAttributes)
               (set! results (cons (hash->string .lookupAttributes) results))))
