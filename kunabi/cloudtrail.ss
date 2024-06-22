@@ -386,7 +386,7 @@
           (when .?secretId
             (set! results (cons .secretId results)))
           (when .?encryptionContext
-            (set! results (cons (hash->string .encryptionContext))))
+            (set! results (cons (hash->string .encryptionContext) results)))
             ;; (let-hash .encryptionContext
             ;;   (when .?SecretArn
             ;;     (set! results (cons .SecretArn results)))))
