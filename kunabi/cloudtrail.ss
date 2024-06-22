@@ -389,7 +389,7 @@
                               (for (item .items)
                                 (when (hash-table? item)
                                   (let-hash item
-                                    (set! results (cons (format "~a: ~a" ....name .value) results)))))))))))))))
+                                    (set! results (cons (format "~a: ~a" ...name .value) results)))))))))))))))
           (when (= (length results) 0)
             (displayln "unhandled rp type ~a" (hash->string rp))
             (set! results (cons (hash->string rp) results))
