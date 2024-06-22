@@ -340,53 +340,53 @@
         (utf8->string (leveldb-iterator-key itor))
         (lp)))))
 
-(def (print-rp rp)
-  (let ((results []))
-    (when rp
-      (when (hash-table? rp)
-	      (let-hash rp
-          (cond
-           (.?instanceSet
-	            (when (hash-table? .instancesSet)
-	              (let-hash .instancesSet
-		              (when .?items
-		                (when (list? .items)
-		                  (for-each
-		                    (lambda (x)
-			                    (when (hash-table? x)
-			                      (hash-for-each
-			                       (lambda (k v)
-			                         (set! results (cons v results)))
-			                       x)))
-		                  .items))))))
-           (.?bucketName
-            (set! results (cons .bucketName results)))
-           (.?functionName
-            (set! results (cons .functionName results)))
-           (.?tableName
-            (set! results (cons .tableName results)))
-           (.?resourceArn
-            (set! results (cons .resourceArn results)))
-           (.?instanceId
-            (set! results (cons .instanceId results)))
-           (.?roleSessionName
-            (set! results (cons .roleSessionName results)))
-           (.?secretId
-            (set! results (cons .secretId results)))
-           (.?encryptionContext
-            (let-hash .encryptionContext)
-            (set! results (cons .SecretArn results)))
-           (.?filterSet
-            (when (hash-table? .filterSet)
-              (let-hash .filterSet
-                (for (item .items)
-                  (when (hash-table? item)
-                    (set! results (cons (format "~a: ~a" .name .valueSet.items.value) results)))))))
-           (else
-            (displayln "unhandled rp type ~a" (hash->string rp))
-            (set! results (cons (hash->string rp) results))
-            )))))
-    (string-join results " ")))
+;; (def (print-rp rp)
+;;   (let ((results []))
+;;     (when rp
+;;       (when (hash-table? rp)
+;; 	      (let-hash rp
+;;           (cond
+;;            (.?instanceSet
+;; 	            (when (hash-table? .instancesSet)
+;; 	              (let-hash .instancesSet
+;; 		              (when .?items
+;; 		                (when (list? .items)
+;; 		                  (for-each
+;; 		                    (lambda (x)
+;; 			                    (when (hash-table? x)
+;; 			                      (hash-for-each
+;; 			                       (lambda (k v)
+;; 			                         (set! results (cons v results)))
+;; 			                       x)))
+;; 		                  .items))))))
+;;            (.?bucketName
+;;             (set! results (cons .bucketName results)))
+;;            (.?functionName
+;;             (set! results (cons .functionName results)))
+;;            (.?tableName
+;;             (set! results (cons .tableName results)))
+;;            (.?resourceArn
+;;             (set! results (cons .resourceArn results)))
+;;            (.?instanceId
+;;             (set! results (cons .instanceId results)))
+;;            (.?roleSessionName
+;;             (set! results (cons .roleSessionName results)))
+;;            (.?secretId
+;;             (set! results (cons .secretId results)))
+;;            (.?encryptionContext
+;;             (let-hash .encryptionContext)
+;;             (set! results (cons .SecretArn results)))
+;;            (.?filterSet
+;;             (when (hash-table? .filterSet)
+;;               (let-hash .filterSet
+;;                 (for (item .items)
+;;                   (when (hash-table? item)
+;;                     (set! results (cons (format "~a: ~a" .name .valueSet.items.value) results)))))))
+;;            (else
+;;             (displayln "unhandled rp type ~a" (hash->string rp))
+;;             (set! results (cons (hash->string rp) results))
+;;             )))))
+;;     (string-join results " ")))
 
 (def (resolve-records ids)
   (when (list? ids)
@@ -531,7 +531,7 @@
 	           (time .?eventTime)
 	           (et .?eventType)
 	           (rid .?recipientAccountId)
-	           (rp (print-rp .?requestParameters))
+	           (rp .?requestParameters)
 	           (user user)
 	           (re .?responseElements)
 	           (sia .?sourceIPAddress)
