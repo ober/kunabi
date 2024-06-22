@@ -359,7 +359,7 @@
 			                     x)))
 		                  .items))))))
           (when .?GroupName
-            (set! results (cons .GroupName result)))
+            (set! results (cons .GroupName results)))
           (when .?filter
             (set! results (cons (hash->string .filter) results)))
           (when .?lookupAttributes
