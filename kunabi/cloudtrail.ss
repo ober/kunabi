@@ -391,20 +391,21 @@
             ;;   (when .?SecretArn
             ;;     (set! results (cons .SecretArn results)))))
           (when .?filterSet
-            (when (hash-table? .filterSet)
-              (let-hash .filterSet
-                (when .?items
-                  (for (item .items)
-                    (when (hash-table? item)
-                      (let-hash item
-                        (when .?valueSet
-                          (when (hash-table? .valueSet)
-                            (let-hash .valueSet
-                              (when .items
-                                (for (item .items)
-                                  (when (hash-table? item)
-                                    (let-hash item
-                                      (set! results (cons (format "~a: ~a" ...name .value) results))))))))))))))))
+            (set! results (cons (hash->string .filterSet) results)))
+            ;; (when (hash-table? .filterSet)
+            ;;   (let-hash .filterSet
+            ;;     (when .?items
+            ;;       (for (item .items)
+            ;;         (when (hash-table? item)
+            ;;           (let-hash item
+            ;;             (when .?valueSet
+            ;;               (when (hash-table? .valueSet)
+            ;;                 (let-hash .valueSet
+            ;;                   (when .items
+            ;;                     (for (item .items)
+            ;;                       (when (hash-table? item)
+            ;;                         (let-hash item
+            ;;                           (set! results (cons (format "~a: ~a" ...name .value) results))))))))))))))))
 
           (when .?Host
             (set! results (cons .Host results)))
