@@ -367,6 +367,21 @@
             (set! results (cons .tableName results)))
            (.?resourceArn
             (set! results (cons .resourceArn results)))
+           (.?instanceId
+            (set! results (cons .instanceId results)))
+           (.?roleSessionName
+            (set! results (cons .roleSessionName results)))
+           (.?secretId
+            (set! results (cons .secretId results)))
+           (.?encryptionContext
+            (let-hash .encryptionContext)
+            (set! results (cons .SecretArn results)))
+           (.?filterSet
+            (when (hash-table? .filterSet)
+              (let-hash .filterSet
+                (for (item .items)
+                  (when (hash-table? item)
+                    (set! results (cons (format "~a: ~a" .name .valueSet.items.value) results)))))))
            (else
             (begin
               (displayln "unhandled rp type ~a" (hash->string rp))
