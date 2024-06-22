@@ -365,9 +365,11 @@
           (when .?GroupName
             (set! results (cons .GroupName results)))
           (when .?filter
-            (set! results (cons (hash->string .filter) results)))
+            (when (hash-table? .filter)
+              (set! results (cons (hash->string .filter) results))))
           (when .?lookupAttributes
-            (set! results (cons (hash->string .lookupAttributes) results)))
+            (when (hash-table .lookupAttributes)
+              (set! results (cons (hash->string .lookupAttributes) results))))
           (when .?roleName
             (set! results (cons .roleName results)))
           (when .?bucketName
