@@ -3,13 +3,17 @@
 ;;; aws cloudtrail parser
 
 (import
-  :gerbil/gambit
-  :std/text/utf8
   :clan/db/leveldb
+  :clan/text/yaml
+  :gerbil/gambit
+  :ober/oberlib
+  :std/actor-v18/io
+  :std/crypto
   :std/debug/heap
   :std/debug/memleak
   :std/format
   :std/generic/dispatch
+  :std/io
   :std/iter
   :std/misc/list
   :std/misc/threads
@@ -17,14 +21,10 @@
   :std/srfi/1
   :std/srfi/95
   :std/sugar
-  :std/crypto
-  :std/text/json
-  :clan/text/yaml
   :std/text/hex
+  :std/text/json
+  :std/text/utf8
   :std/text/zlib
-  :ober/oberlib
-  :std/actor-v18/io
-  :std/io
   )
 
 (def version "0.08")
