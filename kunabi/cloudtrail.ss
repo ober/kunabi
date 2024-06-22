@@ -401,6 +401,9 @@
           (when .?DescribeInstanceCreditSpecificationsRequest
             (set! results (cons (hash->string .DescribeInstanceCreditSpecificationsRequest) results)))
 
+          (when .?repositoryName
+            (set! results (cons .repositoryName results)))
+
           (when .?targetGroupArn
             (set! results (cons .targetGroupArn results)))
 
