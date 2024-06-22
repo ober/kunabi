@@ -414,9 +414,9 @@
           (when .?DescribeInstanceCreditSpecificationsRequest
             (set! results (cons (hash->string .DescribeInstanceCreditSpecificationsRequest) results)))
 
-          ;; (when .?repositoryName
-          ;;   (when (list? .repostoryName)
-          ;;     (set! results (cons .repositoryName results))))
+          (when .?repositoryName
+            (when (list? .repostoryName)
+              (set! results (cons .repositoryName results))))
 
           (when .?targetGroupArn
             (set! results (cons .targetGroupArn results)))
@@ -452,6 +452,7 @@
             (displayln "unhandled rp type: " (hash->string rp))
             (set! results (cons (hash->string rp) results))
             ))))
+    (dp (format "results: ~a" results))
     (string-join results " ")))
 
 
