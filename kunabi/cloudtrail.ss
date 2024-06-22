@@ -386,7 +386,7 @@
                         (when (hash-table? .valueSet)
                           (let-hash .valueSet
                             (when .items
-                              (when (hash-table .items)
+                              (when (hash-table? .items)
                                 (let-hash .items
                                   (set! results (cons (format "~a: ~a" ...name .value) results))))))))))))))
           (when (= (length results) 0)
