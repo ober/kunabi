@@ -373,8 +373,8 @@
           (when .?secretId
             (set! results (cons .secretId results)))
           (when .?encryptionContext
-            (let-hash .encryptionContext)
-            (set! results (cons .SecretArn results)))
+            (let-hash .encryptionContext
+              (set! results (cons .SecretArn results))))
           (when .?filterSet
             (when (hash-table? .filterSet)
               (let-hash .filterSet
