@@ -462,7 +462,7 @@
             (set! results (cons .hostedZoneId results)))
 
           (when (= (length results) 0)
-            (displayln "unhandled rp type: " (hash->string rp))
+            (dp (format "unhandled rp type: ~a" (hash->string rp)))
             (set! results (cons (hash->string rp) results))
             ))))
     ;;(displayln (format "results: ~a" results))
