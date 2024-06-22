@@ -346,7 +346,7 @@
       (when (hash-table? rp)
 	      (let-hash rp
           (cond
-           ((boolean=? .?instanceSet #t)
+           (.?instanceSet
 	            (when (hash-table? .instancesSet)
 	              (let-hash .instancesSet
 		              (when .?items
@@ -359,13 +359,13 @@
 			                         (set! results (cons v results)))
 			                       x)))
 		                  .items))))))
-           ((boolean=? .?bucketName #t)
+           (.?bucketName
             (set! results (cons .bucketName results)))
-           ((boolean=? .?functionName #t)
+           (.?functionName
             (set! results (cons .functionName results)))
-           ((boolean=? .?tableName #t)
+           (.?tableName
             (set! results (cons .tableName results)))
-           ((boolean=? .?resourceArn #t)
+           (.?resourceArn
             (set! results (cons .resourceArn results)))
            (else
             (begin
