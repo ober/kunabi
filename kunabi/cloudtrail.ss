@@ -361,7 +361,6 @@
 
           (when .?repositoryNames
             (set! results (cons .repositoryNames results)))
-
           (when .?GroupName
             (set! results (cons .GroupName results)))
           (when .?filter
@@ -415,9 +414,9 @@
           (when .?DescribeInstanceCreditSpecificationsRequest
             (set! results (cons (hash->string .DescribeInstanceCreditSpecificationsRequest) results)))
 
-          (when .?repositoryName
-            (when (list? .repostoryName)
-              (set! results (cons (car .repositoryName) results))))
+          ;; (when .?repositoryName
+          ;;   (when (list? .repostoryName)
+          ;;     (set! results (cons .repositoryName results))))
 
           (when .?targetGroupArn
             (set! results (cons .targetGroupArn results)))
