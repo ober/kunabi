@@ -366,8 +366,8 @@
           (when .?GroupName
             (set! results (cons .GroupName results)))
           (when .?lookupAttributes
-            (when (hash-table? .lookupAttributes)
-              (set! results (cons (hash->string .lookupAttributes) results))))
+            (when (list? .lookupAttributes)
+              (set! results (cons .lookupAttributes results))))
           (when .?filter
             (when (hash-table? .filter)
               (set! results (cons (hash->string .filter) results))))
