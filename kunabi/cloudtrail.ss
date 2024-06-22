@@ -358,6 +358,10 @@
 			                       (set! results (cons v results)))
 			                     x)))
 		                  .items))))))
+
+          (when .?repositoryNames
+            (set! results (cons .repositoryNames results)))
+
           (when .?GroupName
             (set! results (cons .GroupName results)))
           (when .?filter
