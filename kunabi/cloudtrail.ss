@@ -345,7 +345,6 @@
     (when rp
       (when (hash-table? rp)
 	      (let-hash rp
-
           (when .?instancesSet
 	          (when (hash-table? .instancesSet)
 	            (let-hash .instancesSet
@@ -392,6 +391,19 @@
                                   (when (hash-table? item)
                                     (let-hash item
                                       (set! results (cons (format "~a: ~a" ...name .value) results))))))))))))))))
+
+          (when .?keyId
+            (set! results (cons .keyId results)))
+
+          (when .?startRecordName
+            (set! results (cons .startRecordName results)))
+
+          (when .?id
+            (set! results (cons .id results)))
+
+          (when .?hostedZoneId
+            (set! results (cons .hostedZoneId results)))
+
           (when (= (length results) 0)
             (displayln "unhandled rp type: " (hash->string rp))
             (set! results (cons (hash->string rp) results))
