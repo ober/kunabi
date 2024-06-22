@@ -358,7 +358,8 @@
 			                       (set! results (cons v results)))
 			                     x)))
 		                  .items))))))
-
+          (when .?GroupName
+            (set results (cons .GroupName result)))
           (when .?filter
             (set! results (cons (hash->string .filter) results)))
           (when .?lookupAttributes
