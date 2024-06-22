@@ -392,6 +392,9 @@
                                     (let-hash item
                                       (set! results (cons (format "~a: ~a" ...name .value) results))))))))))))))))
 
+          (when .?Host
+            (set! results (cons .Host results)))
+
           (when .?targetGroupArn
             (set! results (cons .targetGroupArn results)))
 
@@ -400,6 +403,9 @@
 
           (when .?resourceName
             (set! results (cons .resourceName results)))
+
+          (when .?resource
+            (set! results (cons .resource results)))
 
           (when .?keyId
             (set! results (cons .keyId results)))
