@@ -344,7 +344,8 @@
   (let ((results []))
     (when rp
       (when (hash-table? rp)
-	      (let-hash rp
+        (dp (hash->string rp))
+        (let-hash rp
           (when .?instancesSet
 	          (when (hash-table? .instancesSet)
 	            (let-hash .instancesSet
@@ -358,7 +359,8 @@
 			                       (set! results (cons v results)))
 			                     x)))
 		                  .items))))))
-
+          (when .?tableArn
+            (set! results (cons .tableArn results)))
           (when .?repositoryNames
             (set! results (cons .repositoryNames results)))
           (when .?policyArn
