@@ -345,48 +345,48 @@
     (when rp
       (when (hash-table? rp)
 	      (let-hash rp
-          (cond
-           (.?instanceSet
-	            (when (hash-table? .instancesSet)
-	              (let-hash .instancesSet
-		              (when .?items
-		                (when (list? .items)
-		                  (for-each
-		                    (lambda (x)
-			                    (when (hash-table? x)
-			                      (hash-for-each
-			                       (lambda (k v)
-			                         (set! results (cons v results)))
-			                       x)))
+          (when .?instanceSet
+	          (when (hash-table? .instancesSet)
+	            (let-hash .instancesSet
+		            (when .?items
+		              (when (list? .items)
+		                (for-each
+		                  (lambda (x)
+			                  (when (hash-table? x)
+			                    (hash-for-each
+			                     (lambda (k v)
+			                       (set! results (cons v results)))
+			                     x)))
 		                  .items))))))
-           (.?bucketName
+          (when .?bucketName
             (set! results (cons .bucketName results)))
-           (.?functionName
+          (when .?functionName
             (set! results (cons .functionName results)))
-           (.?tableName
+          (when .?tableName
             (set! results (cons .tableName results)))
-           (.?resourceArn
+          (when .?resourceArn
             (set! results (cons .resourceArn results)))
-           (.?instanceId
+          (when .?instanceId
             (set! results (cons .instanceId results)))
-           (.?roleSessionName
+          (when .?roleSessionName
             (set! results (cons .roleSessionName results)))
-           (.?secretId
+          (when .?secretId
             (set! results (cons .secretId results)))
-           (.?encryptionContext
+          (when .?encryptionContext
             (let-hash .encryptionContext)
             (set! results (cons .SecretArn results)))
-           (.?filterSet
+          (when .?filterSet
             (when (hash-table? .filterSet)
               (let-hash .filterSet
                 (for (item .items)
                   (when (hash-table? item)
                     (set! results (cons (format "~a: ~a" .name .valueSet.items.value) results)))))))
-           (else
+          (when (= (length results))
             (displayln "unhandled rp type ~a" (hash->string rp))
             (set! results (cons (hash->string rp) results))
-            )))))
+            ))))
     (string-join results " ")))
+
 
 (def (resolve-records ids)
   (when (list? ids)
