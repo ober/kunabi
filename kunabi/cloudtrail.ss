@@ -416,7 +416,8 @@
             (set! results (cons (hash->string .DescribeInstanceCreditSpecificationsRequest) results)))
 
           (when .?repositoryName
-            (set! results (cons .repositoryName results)))
+            (when (list? .repostoryName)
+              (set! results (cons (car .repositoryName) results))))
 
           (when .?targetGroupArn
             (set! results (cons .targetGroupArn results)))
