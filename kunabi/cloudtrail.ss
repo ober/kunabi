@@ -589,11 +589,8 @@
 		              (when (hash-table? .?sessionIssuer)
 		                (set! username (hash-ref .?sessionIssuer 'userName))))))
              ) ;; cond
-             (else
-              (begin
-                (set! username (format "~a-~a" .?invokedBy .?accountId))
-	              (displayln "error: type :" type " not found in ui" (hash->str ui))))))))
-    username))
+            (set! username (format "~a-~a" .?invokedBy .?accountId))))))
+          username))
 
 (def (process-row row)
   (dp (format "process-row: row: ~a" (hash->list row)))
