@@ -591,8 +591,8 @@
              ) ;; cond
              (else
               (begin
-                (set! username (format "~a-~a" .?invokedBy .?accountId))))
-	           (displayln "error: type :" type " not found in ui" (hash->str ui))))))
+                (set! username (format "~a-~a" .?invokedBy .?accountId))
+	              (displayln "error: type :" type " not found in ui" (hash->str ui))))))))
     username))
 
 (def (process-row row)
