@@ -99,17 +99,14 @@
   (let ((results '()))
     (for-each
      (lambda (item)
-       (displayln (##type-of item))
        (let ((resolved (resolve-by-key (format "en#~a#" item))))
-         (displayln resolved)
          (set! results (cons resolved results))))
       lst)
-    (resolve-records results)))
+    (if (> (length (flatten results)) 0)
+        (resolve-records results)
+        (displayln "No records found"))))
 
 ;; readers
-
-
-
 
 (def (resolve-by-key key)
 (let ((itor (leveldb-iterator db)))
