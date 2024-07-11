@@ -74,20 +74,55 @@
       (when (leveldb-iterator-valid? itor)
         (lp)))))
 
+;; query
+
+(def (q key)
+  "Execute query stored in ~/.kunabi.yaml"
+  (let ((config (load-config)))
+    (when config
+      (when (hash-table? config)
+        (let-hash config
+          (when .?queries
+            (when (hash-table? .queries)
+              (let ((k (hash-ref .queries key)))
+                (if k
+                  (when (hash-table? k)
+                    (displayln (hash-keys k))
+                    (let-hash k
+                      (cond
+                            ((string=? "event" .$type)
+                             (query-events .$values))
+                            )))
+                    (displayln (format "Key ~a not found" key)))))))))))
+
+(def (query-events lst)
+  "Query all the events in lst"
+  (let ((results '()))
+    (for-each
+      (lambda (item)
+        (let ((resolved (resolve-by-key (format "en#~a#" item))))
+          (displayln resolved)
+          (set! results (cons resolved results))))
+      lst)
+    (resolve-records results)))
+
 ;; readers
 
+
+
+
 (def (resolve-by-key key)
-  (let ((itor (leveldb-iterator db)))
-    (leveldb-iterator-seek itor (format "~a" key))
-    (let lp ((res '()))
-      (if (leveldb-iterator-valid? itor)
-        (if (pregexp-match key (utf8->string (leveldb-iterator-key itor)))
-	        (begin
-	          (set! res (cons (unmarshal-value (leveldb-iterator-value itor)) res))
-	          (leveldb-iterator-next itor)
-	          (lp res))
-	        res)
-        res))))
+(let ((itor (leveldb-iterator db)))
+  (leveldb-iterator-seek itor (format "~a" key))
+  (let lp ((res '()))
+    (if (leveldb-iterator-valid? itor)
+      (if (pregexp-match key (utf8->string (leveldb-iterator-key itor)))
+	      (begin
+	        (set! res (cons (unmarshal-value (leveldb-iterator-value itor)) res))
+	        (leveldb-iterator-next itor)
+	        (lp res))
+	      res)
+      res))))
 
 (def (uniq-by-mid-prefix key)
   (dp (format ">-- uniq-by-mid-prefix: ~a" key))
@@ -400,25 +435,25 @@
             (set! results (cons .secretId results)))
           (when .?encryptionContext
             (set! results (cons (hash->string .encryptionContext) results)))
-            ;; (let-hash .encryptionContext
-            ;;   (when .?SecretArn
-            ;;     (set! results (cons .SecretArn results)))))
+          ;; (let-hash .encryptionContext
+          ;;   (when .?SecretArn
+          ;;     (set! results (cons .SecretArn results)))))
           (when .?filterSet
             (set! results (cons (hash->string .filterSet) results)))
-            ;; (when (hash-table? .filterSet)
-            ;;   (let-hash .filterSet
-            ;;     (when .?items
-            ;;       (for (item .items)
-            ;;         (when (hash-table? item)
-            ;;           (let-hash item
-            ;;             (when .?valueSet
-            ;;               (when (hash-table? .valueSet)
-            ;;                 (let-hash .valueSet
-            ;;                   (when .items
-            ;;                     (for (item .items)
-            ;;                       (when (hash-table? item)
-            ;;                         (let-hash item
-            ;;                           (set! results (cons (format "~a: ~a" ...name .value) results))))))))))))))))
+          ;; (when (hash-table? .filterSet)
+          ;;   (let-hash .filterSet
+          ;;     (when .?items
+          ;;       (for (item .items)
+          ;;         (when (hash-table? item)
+          ;;           (let-hash item
+          ;;             (when .?valueSet
+          ;;               (when (hash-table? .valueSet)
+          ;;                 (let-hash .valueSet
+          ;;                   (when .items
+          ;;                     (for (item .items)
+          ;;                       (when (hash-table? item)
+          ;;                         (let-hash item
+          ;;                           (set! results (cons (format "~a: ~a" ...name .value) results))))))))))))))))
 
           (when .?Host
             (set! results (cons .Host results)))
@@ -590,7 +625,7 @@
 		                (set! username (hash-ref .?sessionIssuer 'userName))))))
              ) ;; cond
             (set! username (format "~a-~a" .?invokedBy .?accountId))))))
-          username))
+    username))
 
 (def (process-row row)
   (dp (format "process-row: row: ~a" (hash->list row)))
