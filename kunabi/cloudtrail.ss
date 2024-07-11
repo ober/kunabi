@@ -87,7 +87,6 @@
               (let ((k (hash-ref .queries key)))
                 (if k
                   (when (hash-table? k)
-                    (displayln (hash-keys k))
                     (let-hash k
                       (cond
                             ((string=? "event" .$type)
@@ -99,10 +98,11 @@
   "Query all the events in lst"
   (let ((results '()))
     (for-each
-      (lambda (item)
-        (let ((resolved (resolve-by-key (format "en#~a#" item))))
-          (displayln resolved)
-          (set! results (cons resolved results))))
+     (lambda (item)
+       (displayln (##type-of item))
+       (let ((resolved (resolve-by-key (format "en#~a#" item))))
+         (displayln resolved)
+         (set! results (cons resolved results))))
       lst)
     (resolve-records results)))
 
