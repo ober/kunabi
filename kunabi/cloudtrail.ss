@@ -100,9 +100,9 @@
     (for-each
      (lambda (item)
        (let ((resolved (resolve-by-key (format "en#~a#" item))))
-         (set! results (cons resolved results))))
+        (set! results (flatten (cons resolved results)))))
       lst)
-    (if (> (length (flatten results)) 0)
+    (if (> (length results) 0)
         (resolve-records results)
         (displayln "No records found"))))
 
