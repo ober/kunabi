@@ -93,6 +93,8 @@
                              (query-items "en#~a#" .$values))
                             ((string=? "username" .$type)
                              (query-items "un#~a#" .$values))
+                            ((string=? "errorcode" .$type)
+                             (query-items "ec#~a#" .$values))
                             )))
                     (displayln (format "Key ~a not found" key)))))))))))
 
