@@ -90,16 +90,18 @@
                     (let-hash k
                       (cond
                             ((string=? "event" .$type)
-                             (query-events .$values))
+                             (query-items "en#~a#" .$values))
+                            ((string=? "username" .$type)
+                             (query-items "un#~a#" .$values))
                             )))
                     (displayln (format "Key ~a not found" key)))))))))))
 
-(def (query-events lst)
+(def (query-items pattern lst)
   "Query all the events in lst"
   (let ((results '()))
     (for-each
      (lambda (item)
-       (let ((resolved (resolve-by-key (format "en#~a#" item))))
+       (let ((resolved (resolve-by-key (format pattern item))))
         (set! results (flatten (cons resolved results)))))
       lst)
     (if (> (length results) 0)
